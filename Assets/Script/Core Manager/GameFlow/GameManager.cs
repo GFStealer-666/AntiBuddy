@@ -24,14 +24,6 @@ public class GameManager : MonoBehaviour
         gameStateManager.StartGame();
 
         // Example of drawing a card and using it
-        playerManager.DrawCard(deckManager);
-    }
-
-    private CardSO CreateCard(string name, int power)
-    {
-        CardSO card = ScriptableObject.CreateInstance<CardSO>();
-        card.cardName = name;
-        card.power = power;
-        return card;
+        playerManager.DrawCards(5);
     }
 }
