@@ -11,8 +11,7 @@ public class HelperTCellCardSO : ImmuneCardSO
 
     protected override void DoCardEffect(Player player, List<CardSO> playedCards, PathogenSO target)
     {
-        // Helper T-Cell provides small direct benefit and enables other cards
-        CardEffects.AddTokens(player, 1);
-        Debug.Log("Helper T-Cell: +1 token and enables B-Cell/Cytotoxic combos");
+        // Empty effect - Helper T-Cell just enables combos
+        // It does not have a direct effect on its own
     }
 }

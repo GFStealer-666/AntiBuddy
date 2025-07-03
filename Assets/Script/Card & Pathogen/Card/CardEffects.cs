@@ -7,7 +7,7 @@ public static class CardEffects
     
     public static void DealDamage(PathogenSO target, int damage)
     {
-        if (target != null && target.health > 0)
+        if (target != null && target.maxHitPoints > 0)
         {
             target.TakeDamage(damage);
         }

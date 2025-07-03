@@ -41,7 +41,7 @@ public class PlayerManager : MonoBehaviour
 
     public bool AttackPathogen(PathogenSO pathogen, int damage)
     {
-        if (pathogen != null && pathogen.health > 0)
+        if (pathogen != null && pathogen.maxHitPoints > 0)
         {
             pathogen.TakeDamage(damage);
             Debug.Log($"Attacked {pathogen.pathogenName} for {damage} damage");

@@ -20,12 +20,19 @@ public class DeckManager : MonoBehaviour
 
     [Tooltip("The actual deck used for drawing (generated from baseCards)")]
     [SerializeField] private List<CardSO> deck = new List<CardSO>();
+    
+    private Dictionary<string, int> deckComposition = new Dictionary<string, int>();
+
+    [Tooltip("If set to true, every time the gard is drawn, will shuffle the deck")]
+    [SerializeField] private bool shuffleOnDraw = false;
 
     [Header("Advanced Deck Generation (Optional)")]
     [Tooltip("If set to true, uses weighted generation based on percentages of each card type")]
     public bool useWeightedGeneration = false;
-
+    [Tooltip("List of cards with their respective weights for deck generation")]
+    [SerializeField]
     [System.Serializable]
+    
     public class WeightedCard
     {
         public CardSO card;
@@ -73,10 +80,11 @@ public class DeckManager : MonoBehaviour
             int randomIndex = rand.Next(baseCards.Count);
             deck.Add(baseCards[randomIndex]);
         }
-
+        GenerateDeckComposition(deck);
         Debug.Log($"Generated random deck of {deck.Count} cards from {baseCards.Count} base card types");
     }
 
+    // If boolean useWeightedGeneration is true, generate a deck based on weighted percentages
     // Alternative generation method with percentage-based weights
     private void GenerateWeightedDeck()
     {
@@ -99,16 +107,18 @@ public class DeckManager : MonoBehaviour
         // Warn if percentages don't add up to 1.0 (100%)
         if (Mathf.Abs(totalPercentage - 1.0f) > 0.0001f)
         {
-            Debug.LogWarning($"Weighted cards total percentage is {totalPercentage:F2}, not 1.0. Results may be unexpected.");
+            Debug.LogWarning($"Weighted cards total percentage is {totalPercentage:F2}, not 1.0. Results may cause an error.");
         }
 
         // Generate cards based on percentages
         int cardsAdded = 0;
-        foreach (var weightedCard in weightedCards)
+        
+        foreach (WeightedCard weightedCard in weightedCards)
         {
             if (weightedCard.card != null)
             {
                 // Calculate how many cards this percentage represents
+                // Normalize the percentage to the total deck size
                 float normalizedPercentage = weightedCard.weightPercentage / totalPercentage;
                 int cardCount = Mathf.RoundToInt(normalizedPercentage * totalDeckSize);
 
@@ -122,26 +132,45 @@ public class DeckManager : MonoBehaviour
             }
         }
 
-        // Fill remaining slots with random cards from baseCards if we're short
+        // Function that check if weightedCards is not reach maximum deck size //
+
+        // Fill remaining slots with random cards from baseCards if we're short of totalDeckSize
         while (deck.Count < totalDeckSize && baseCards.Count > 0)
         {
             int randomIndex = rand.Next(baseCards.Count);
             deck.Add(baseCards[randomIndex]);
         }
 
-        // Remove excess cards if we're over (due to rounding)
+        // Remove excess cards if we're over the totalDeckSize
         while (deck.Count > totalDeckSize)
         {
             int randomIndex = rand.Next(deck.Count);
             deck.RemoveAt(randomIndex);
         }
-
+        GenerateDeckComposition(deck);
         Debug.Log($"Generated weighted deck of {deck.Count} cards from {weightedCards.Count} weighted types");
+    }
+
+    public void GenerateDeckComposition(List<CardSO> cards)
+    {
+        deckComposition.Clear();
+        foreach (CardSO card in cards)
+        {
+            if (card == null) continue;
+            if (deckComposition.ContainsKey(card.cardName))
+            {
+                deckComposition[card.cardName] += 1;
+            }
+            else
+            {
+                deckComposition[card.cardName] = 1;
+            }
+        }
     }
     #endregion
 
-    #region Card Management
-    // Draw a card from the deck
+    #region Deck Management
+    // Draw a single card from the deck
     public CardSO DrawCard()
     {
         if (deck.Count == 0)
@@ -153,7 +182,10 @@ public class DeckManager : MonoBehaviour
         int index = rand.Next(deck.Count);
         CardSO drawnCard = deck[index];
         RemoveCard(index);
-
+        if (shuffleOnDraw)
+        {
+            ShuffleDeck();
+        }
         Debug.Log($"Drew {drawnCard.cardName}. Cards remaining: {deck.Count}");
         return drawnCard;
     }
@@ -169,7 +201,6 @@ public class DeckManager : MonoBehaviour
             Debug.LogWarning($"Index {index} is out of bounds for deck of size {deck.Count}.");
         }
     }
-    #endregion
     // Shuffle the deck (randomize order of cards)
     public void ShuffleDeck()
     {
@@ -177,45 +208,29 @@ public class DeckManager : MonoBehaviour
         Debug.Log($"Deck shuffled. Total cards: {deck.Count}");
     }
 
-    // Regenerate and shuffle the deck (useful for restarting game)
+    // Regenerate and shuffle the deck (restarting the game without reassigning base cards)
     public void RegenerateDeck()
     {
         GenerateDeck();
         ShuffleDeck();
     }
 
+    #endregion
 
-    // Get remaining cards count
+    #region Deck Information
     public int GetRemainingCards() => deck.Count;
-
-    // Check if deck is empty
     public bool IsDeckEmpty() => deck.Count == 0;
-
-    // Get deck composition for analysis
-    public Dictionary<string, int> GetDeckComposition()
+    public bool IsCardInDeck(CardSO card) => deck.Contains(card);
+    public int  GetCardCountInDeck(CardSO card)
     {
-        var composition = new Dictionary<string, int>();
-
-        foreach (var card in deck)
-        {
-            if (card != null)
-            {
-                string cardName = card.cardName;
-                if (composition.ContainsKey(cardName))
-                {
-                    composition[cardName]++;
-                }
-                else
-                {
-                    composition[cardName] = 1;
-                }
-            }
-        }
-
-        return composition;
+        if (card == null) return 0;
+        return deck.Count(c => c == card);
     }
+    public Dictionary<string, int> GetDeckComposition() => deckComposition;
 
-    #region WeightedCard Management
+    #endregion
+
+    #region Editor Context Menu
 
     // Add all base cards to weighted cards list with equal distribution
     [ContextMenu("Add All Base Cards to Weighted List")]
@@ -358,7 +373,8 @@ public class DeckManager : MonoBehaviour
         Debug.Log($"Auto-balanced {weightedCards.Count} cards to {equalPercentage:P1} each");
         ValidateWeightedCards();
     }
-
+    #endregion
+    #region Weighted Card Validation
     // Validate that weighted cards add up to 100% (or close to it)
     public void ValidateWeightedCards()
     {

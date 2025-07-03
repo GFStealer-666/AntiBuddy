@@ -126,10 +126,6 @@ public class GameUIManager : MonoBehaviour
             
             // Set card text
             TextMeshProUGUI buttonText = button.GetComponentInChildren<TextMeshProUGUI>();
-            if (buttonText != null)
-            {
-                buttonText.text = $"{card.cardName}\nPower: {card.power}";
-            }
             
             // Set button action
             button.onClick.AddListener(() => PlayCard(card));
@@ -158,7 +154,7 @@ public class GameUIManager : MonoBehaviour
             // Auto-target first living pathogen
             foreach (var pathogen in pathogenManager.pathogens)
             {
-                if (pathogen.health > 0)
+                if (pathogen.maxHitPoints > 0)
                 {
                     target = pathogen;
                     break;

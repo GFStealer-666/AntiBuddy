@@ -90,7 +90,13 @@ public class Player
             Console.WriteLine($"Played {card.cardName}");
             return true;
         }
+        Console.WriteLine($"Card {card.cardName} not found in hand!");
         return false;
+    }
+
+    public bool CanPlayCard(CardSO card)
+    {
+        return Hand.Contains(card);
     }
 
     public void ResetTurnStats()

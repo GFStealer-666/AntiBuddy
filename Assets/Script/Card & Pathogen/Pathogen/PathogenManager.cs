@@ -24,6 +24,6 @@ public class PathogenManager : MonoBehaviour
 
     public bool AllPathogensDefeated()
     {
-        return pathogens.All(p => p.health <= 0);
+        return pathogens.All(p => p.maxHitPoints <= 0);
     }
 }
