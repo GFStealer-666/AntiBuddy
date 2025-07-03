@@ -2,15 +2,15 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerManager
+public class PlayerManager : MonoBehaviour
 {
     // reference to the Player instance
     // This class manages player actions such as healing, attacking pathogens, and drawing cards.
 
     private Player player;
     private DeckManager deckManager;
-    private const int MAX_HAND_SIZE = 7;
-    private const int CARDS_PER_TURN = 1;
+    private readonly int MAX_HAND_SIZE = 5;
+    // Removed CARDS_PER_TURN as it will be determined by cards played in previous turn
 
     public PlayerManager(Player p, DeckManager deck = null)
     {
@@ -28,21 +28,15 @@ public class PlayerManager
         deckManager = deck;
     }
 
-    public void StartTurn()
+    public void StartTurn(int cardsToDraw = 2)
     {
-        player.StartNewTurn();
-        DrawCards(CARDS_PER_TURN);
-        Debug.Log($"Turn started. Hand size: {player.Hand.Count}, Defense: {player.Defense}");
+        player.ResetTurnStats();
+        DrawCards(cardsToDraw);
     }
 
     public void HealPlayer(int amount)
     {
         player.Heal(amount);
-    }
-
-    public void DefendPlayer(int amount)
-    {
-        player.AddDefense(amount);
     }
 
     public bool AttackPathogen(PathogenSO pathogen, int damage)
@@ -62,7 +56,6 @@ public class PlayerManager
         {
             return player.PlayCard(card, target);
         }
-        Debug.LogWarning("Card not in player's hand");
         return false;
     }
 
@@ -70,7 +63,6 @@ public class PlayerManager
     {
         if (deckManager == null)
         {
-            Debug.LogWarning("No deck manager assigned");
             return;
         }
 
@@ -78,7 +70,6 @@ public class PlayerManager
         {
             if (player.Hand.Count >= MAX_HAND_SIZE)
             {
-                Debug.Log("Hand is full, cannot draw more cards");
                 break;
             }
 
@@ -89,7 +80,6 @@ public class PlayerManager
             }
             else
             {
-                Debug.Log("No more cards in deck");
                 break;
             }
         }
@@ -117,6 +107,16 @@ public class PlayerManager
             card.ApplyEffect(player, player.PlayedCards, target);
         }
     }
+
+    public int GetHandSize()
+    {
+        return player.Hand.Count;
+    }
+    public int GetMaxHandSize()
+    {
+        return MAX_HAND_SIZE;
+    }
+    // Removed GetMaxCardsPerTurn() as this is now managed by TurnManager
 
     public PlayerStats GetPlayerStats()
     {

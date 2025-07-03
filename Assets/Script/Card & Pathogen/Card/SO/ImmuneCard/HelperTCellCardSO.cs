@@ -1,12 +1,18 @@
 using UnityEngine;
 using System.Collections.Generic;
+
 [CreateAssetMenu(fileName = "Helper T Cell", menuName = "Card/Immune/HelperT")]
 public class HelperTCellCardSO : ImmuneCardSO
 {
-    public override void ApplyEffect(Player player, List<CardSO> playedCards, PathogenSO target)
+    void Awake()
     {
-        // Helper T-Cell activates B-Cells and Cytotoxic T-Cells
-        // On its own, it just takes up a field slot for activation
-        Debug.Log("Helper T-Cell: Activated for B-Cell and Cytotoxic T-Cell combos");
+        cardType = ImmuneCardType.Instant; // Helper T activates immediately
+    }
+
+    protected override void DoCardEffect(Player player, List<CardSO> playedCards, PathogenSO target)
+    {
+        // Helper T-Cell provides small direct benefit and enables other cards
+        CardEffects.AddTokens(player, 1);
+        Debug.Log("Helper T-Cell: +1 token and enables B-Cell/Cytotoxic combos");
     }
 }

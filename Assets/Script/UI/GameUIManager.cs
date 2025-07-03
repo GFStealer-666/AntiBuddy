@@ -13,7 +13,6 @@ public class GameUIManager : MonoBehaviour
     public TextMeshProUGUI phaseText;
     public TextMeshProUGUI handSizeText;
     public Button endTurnButton;
-    public Button drawCardButton;
     public Transform cardContainer;
     public GameObject cardButtonPrefab;
 
@@ -35,9 +34,6 @@ public class GameUIManager : MonoBehaviour
         // Setup button listeners
         if (endTurnButton != null)
             endTurnButton.onClick.AddListener(() => turnManager.EndPlayerTurn());
-            
-        if (drawCardButton != null)
-            drawCardButton.onClick.AddListener(() => turnManager.DrawCard());
 
         UpdateUI();
     }
@@ -59,9 +55,6 @@ public class GameUIManager : MonoBehaviour
         bool isPlayerTurn = phase == TurnPhase.PlayerTurn;
         if (endTurnButton != null)
             endTurnButton.interactable = isPlayerTurn;
-        if (drawCardButton != null)
-            drawCardButton.interactable = isPlayerTurn;
-
         UpdateCardButtons(isPlayerTurn);
     }
 
@@ -191,10 +184,4 @@ public class GameUIManager : MonoBehaviour
             turnManager.EndPlayerTurn();
     }
 
-    // Public method for external UI elements to draw card
-    public void DrawCard()
-    {
-        if (turnManager != null)
-            turnManager.DrawCard();
-    }
 }

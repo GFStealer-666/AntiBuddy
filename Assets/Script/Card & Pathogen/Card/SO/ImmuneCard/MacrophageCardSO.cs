@@ -8,7 +8,12 @@ public class MacrophageCardSO : ImmuneCardSO
     [Header("Card Rewards")]
     public HelperTCellCardSO helperTCellReward;
 
-    public override void ApplyEffect(Player player, List<CardSO> playedCards, PathogenSO target)
+    void Awake()
+    {
+        cardType = ImmuneCardType.Instant; // Macrophages activate immediately
+    }
+
+    protected override void DoCardEffect(Player player, List<CardSO> playedCards, PathogenSO target)
     {
         // Macrophage provides 25% defense, 5 damage, and gives 1 Helper T-Cell
         CardEffects.AddPercentageDefense(player, 25);

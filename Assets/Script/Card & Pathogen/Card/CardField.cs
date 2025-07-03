@@ -44,7 +44,7 @@ public class CardFieldSlot
 public class CardField : MonoBehaviour
 {
     [Header("Field Configuration")]
-    public int maxFieldSlots = 5;
+    public int maxFieldSlots = 2;
     
     private List<CardFieldSlot> fieldSlots;
     private List<CardSO> activeCards; // Cards currently in field that provide ongoing effects
@@ -116,25 +116,68 @@ public class CardField : MonoBehaviour
         return maxFieldSlots - activeCards.Count;
     }
 
-    // Check for specific card types in field
+    // Check for specific card types in field - uses CardEffects utility
     public bool HasCardTypeInField<T>() where T : CardSO
     {
-        foreach (var card in activeCards)
-        {
-            if (card is T)
-                return true;
-        }
-        return false;
+        return CardEffects.HasCardType<T>(activeCards);
     }
 
     public int CountCardTypeInField<T>() where T : CardSO
     {
-        int count = 0;
-        foreach (var card in activeCards)
+        return CardEffects.CountCardType<T>(activeCards);
+    }
+
+    // Utility method to check multiple card types at once
+    public bool HasAnyCardTypes<T1, T2>() 
+        where T1 : CardSO 
+        where T2 : CardSO
+    {
+        return HasCardTypeInField<T1>() || HasCardTypeInField<T2>();
+    }
+    
+    // Check if field has all required card types for combo
+    public bool HasAllCardTypes<T1, T2>() 
+        where T1 : CardSO 
+        where T2 : CardSO
+    {
+        return HasCardTypeInField<T1>() && HasCardTypeInField<T2>();
+    }
+
+    // Special field-wide effects that can be triggered by TurnManager
+    public void CheckForFieldEffects(Player player, PathogenSO target)
+    {
+        // Cytokine Storm - when too many immune cells are active
+        int immuneCellCount = CountCardTypeInField<BCellCardSO>() +
+                             CountCardTypeInField<CytotoxicCellCardSO>() +
+                             CountCardTypeInField<MacrophageCardSO>() +
+                             CountCardTypeInField<HelperTCellCardSO>() +
+                             CountCardTypeInField<NaturalKillerCardSO>();
+        
+        if (immuneCellCount >= 4)
         {
-            if (card is T)
-                count++;
+            // Cytokine storm - powerful but damages player
+            if (target != null)
+            {
+                target.TakeDamage(immuneCellCount * 8);
+            }
+            player.TakeDamage(immuneCellCount * 2);
+            Debug.Log($"CYTOKINE STORM! {immuneCellCount} immune cells cause massive damage but {immuneCellCount * 2} self-damage!");
         }
-        return count;
+        
+        // Memory Response - bonus when same card types are repeated
+        if (CountCardTypeInField<BCellCardSO>() >= 2)
+        {
+            player.AddTokens(2);
+            Debug.Log("B-Cell memory response: +2 tokens");
+        }
+        
+        if (CountCardTypeInField<CytotoxicCellCardSO>() >= 2)
+        {
+            if (target != null)
+            {
+                target.TakeDamage(10);
+            }
+            Debug.Log("T-Cell memory response: +10 damage");
+        }
     }
 }

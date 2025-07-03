@@ -93,7 +93,7 @@ public class Player
         return false;
     }
 
-    public void StartNewTurn()
+    public void ResetTurnStats()
     {
         ResetDefense();
         PlayedCards.Clear();
