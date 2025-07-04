@@ -53,7 +53,8 @@ public class GameManager : MonoBehaviour
     private void StartGame()
     {
         gameStateManager?.StartGame();
-        StartPlayerTurn();
+        // TurnManager will handle starting the first turn in its own Start() method
+        Debug.Log("GameManager: Game started, TurnManager will handle turn flow");
     }
     
     #endregion
@@ -64,12 +65,8 @@ public class GameManager : MonoBehaviour
     {
         Debug.Log("=== PLAYER TURN STARTED ===");
         
-        // Notify TurnManager to start player turn
-        turnManager?.StartPlayerTurn();
-        
-        // Notify PlayerManager to prepare for turn
-        playerManager?.StartTurn();
-        
+        // TurnManager handles its own turn flow
+        // Just notify other systems
         OnPlayerTurnStart?.Invoke();
     }
     
@@ -77,41 +74,16 @@ public class GameManager : MonoBehaviour
     {
         Debug.Log("=== PLAYER TURN ENDED ===");
         
-        // Notify TurnManager to end player turn
-        turnManager?.EndPlayerTurn();
-        
+        // TurnManager handles its own turn flow
         OnPlayerTurnEnd?.Invoke();
-        
-        // Start pathogen turn
-        StartPathogenTurn();
     }
     
     public void StartPathogenTurn()
     {
         Debug.Log("=== PATHOGEN TURN STARTED ===");
         
-        // Notify TurnManager to start pathogen turn
-        turnManager?.StartPathogenTurn();
-        
-        // Execute pathogen actions through PathogenManager
-        if (pathogenManager != null && playerManager != null)
-        {
-            var player = playerManager.GetPlayer();
-            var playedCards = playerManager.GetPlayedCards();
-            pathogenManager.ExecutePathogenTurn(player, playedCards);
-        }
-        
+        // TurnManager handles its own turn flow
         OnPathogenTurnStart?.Invoke();
-        
-        // Check if player died
-        if (playerManager?.GetPlayer()?.HP <= 0)
-        {
-            HandleGameOver();
-            return;
-        }
-        
-        // End pathogen turn after delay
-        Invoke(nameof(EndPathogenTurn), 2f);
     }
     
     public void EndPathogenTurn()
@@ -119,9 +91,6 @@ public class GameManager : MonoBehaviour
         Debug.Log("=== PATHOGEN TURN ENDED ===");
         
         OnPathogenTurnEnd?.Invoke();
-        
-        // Start next player turn
-        StartPlayerTurn();
     }
     
     #endregion
@@ -148,35 +117,8 @@ public class GameManager : MonoBehaviour
     
     public bool PlayCard(CardSO card, Pathogen target = null)
     {
-        // Check if it's player turn through TurnManager
-        if (!turnManager.IsPlayerTurn())
-        {
-            Debug.LogWarning("Cannot play cards during pathogen turn");
-            return false;
-        }
-        
-        // Check if card is blocked by pathogens
-        if (pathogenManager.IsCardBlocked(card.GetType()))
-        {
-            Debug.LogWarning($"{card.cardName} is blocked by pathogen abilities");
-            return false;
-        }
-        
-        // Try to play card through PlayerManager and TurnManager
-        if (playerManager.PlayCard(card, target))
-        {
-            turnManager.OnCardPlayed(card);
-            
-            // Check if turn should end
-            if (!turnManager.CanPlayMoreCards())
-            {
-                EndPlayerTurn();
-            }
-            
-            return true;
-        }
-        
-        return false;
+        // Delegate to TurnManager which handles card limits and turn logic
+        return turnManager?.PlayCard(card, target) ?? false;
     }
     
     // Getters for other systems
@@ -199,9 +141,9 @@ public class GameManager : MonoBehaviour
     [ContextMenu("End Turn")]
     public void EndTurnButtonPressed()
     {
-        if (turnManager.GetCurrentPhase() == TurnPhase.PlayerTurn)
+        if (turnManager?.GetCurrentPhase() == TurnPhase.PlayerTurn)
         {
-            EndPlayerTurn();
+            turnManager.EndPlayerTurn();
         }
     }
     

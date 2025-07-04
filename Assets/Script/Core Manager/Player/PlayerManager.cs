@@ -60,7 +60,7 @@ public class PlayerManager : MonoBehaviour
     {
         // Use TurnManager's setting if not specified
         if (cardsToDraw == -1)
-            cardsToDraw = turnManager?.GetCardsToDrawEachTurn() ?? 2;
+            cardsToDraw = turnManager?.cardsPerTurn ?? 2;
             
         player.ResetTurnStats();
         DrawCards(cardsToDraw);

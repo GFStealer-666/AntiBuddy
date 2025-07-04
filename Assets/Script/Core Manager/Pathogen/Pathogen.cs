@@ -97,6 +97,10 @@ public class Pathogen
     {
         return data;
     }
+    public PathogenHealth GetHealth()
+    {
+        return health;
+    }
     
     public string GetPathogenName()
     {
