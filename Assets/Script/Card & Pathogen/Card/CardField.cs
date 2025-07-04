@@ -144,40 +144,17 @@ public class CardField : MonoBehaviour
     }
 
     // Special field-wide effects that can be triggered by TurnManager
-    public void CheckForFieldEffects(Player player, PathogenSO target)
+    // trigger when certain conditions are met on the field
+    // trigger in endturn or at specific times 
+    public void CheckForFieldEffects(Player player, Pathogen target)
     {
         // Cytokine Storm - when too many immune cells are active
         int immuneCellCount = CountCardTypeInField<BCellCardSO>() +
-                             CountCardTypeInField<CytotoxicCellCardSO>() +
-                             CountCardTypeInField<MacrophageCardSO>() +
-                             CountCardTypeInField<HelperTCellCardSO>() +
-                             CountCardTypeInField<NaturalKillerCardSO>();
-        
-        if (immuneCellCount >= 4)
-        {
-            // Cytokine storm - powerful but damages player
-            if (target != null)
-            {
-                target.TakeDamage(immuneCellCount * 8);
-            }
-            player.TakeDamage(immuneCellCount * 2);
-            Debug.Log($"CYTOKINE STORM! {immuneCellCount} immune cells cause massive damage but {immuneCellCount * 2} self-damage!");
-        }
-        
-        // Memory Response - bonus when same card types are repeated
-        if (CountCardTypeInField<BCellCardSO>() >= 2)
-        {
-            player.AddTokens(2);
-            Debug.Log("B-Cell memory response: +2 tokens");
-        }
-        
-        if (CountCardTypeInField<CytotoxicCellCardSO>() >= 2)
-        {
-            if (target != null)
-            {
-                target.TakeDamage(10);
-            }
-            Debug.Log("T-Cell memory response: +10 damage");
-        }
+                            CountCardTypeInField<CytotoxicCellCardSO>() +
+                            CountCardTypeInField<MacrophageCardSO>() +
+                            CountCardTypeInField<HelperTCellCardSO>() +
+                            CountCardTypeInField<NaturalKillerCardSO>();
+
+
     }
 }

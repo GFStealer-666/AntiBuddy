@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 // This code defines a GameStateManager that manages the state of a game.
 // It uses an enum to represent different game states and implements a Singleton pattern
@@ -49,22 +50,15 @@ public class GameStateManager
         if (currentState == GameState.NotStarted)
         {
             currentState = GameState.InProgress;
-            Console.WriteLine("Game Started!");
+            Debug.Log("Game Started!");
         }
     }
 
     // End the game
     public void EndGame(bool isVictory)
     {
-        currentState = GameState.GameOver;
-        if (isVictory)
-        {
-            Console.WriteLine("Victory! You won!");
-        }
-        else
-        {
-            Console.WriteLine("Game Over! You lost.");
-        }
+        currentState = isVictory ? GameState.Victory : GameState.GameOver;
+        Debug.Log(isVictory ? "Victory! You won!" : "Game Over! You lost.");
     }
 
     // Check win condition
@@ -83,3 +77,5 @@ public class GameStateManager
         return currentState == GameState.InProgress;
     }
 }
+    
+

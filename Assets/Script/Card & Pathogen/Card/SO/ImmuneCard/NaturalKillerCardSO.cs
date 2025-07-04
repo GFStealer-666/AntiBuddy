@@ -9,7 +9,7 @@ public class NaturalKillerCardSO : ImmuneCardSO
         cardType = ImmuneCardType.Instant; // Natural Killer activates immediately
     }
 
-    protected override void DoCardEffect(Player player, List<CardSO> playedCards, PathogenSO target)
+    protected override void DoCardEffect(Player player, List<CardSO> playedCards, Pathogen target)
     {
         // Natural Killer cells instantly attack for random 5-20 HP
         int damage = UnityEngine.Random.Range(5, 21);

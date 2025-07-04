@@ -2,20 +2,44 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+/// <summary>
+/// Manages Player, Deck, and Card operations
+/// Handles all player-related actions and stats
+/// </summary>
 public class PlayerManager : MonoBehaviour
 {
-    // reference to the Player instance
-    // This class manages player actions such as healing, attacking pathogens, and drawing cards.
-
-    private Player player;
+    [SerializeField] private Player player;
     private DeckManager deckManager;
+    private TurnManager turnManager;
     private readonly int MAX_HAND_SIZE = 5;
-    // Removed CARDS_PER_TURN as it will be determined by cards played in previous turn
 
-    public PlayerManager(Player p, DeckManager deck = null)
+    [SerializeField] private int defaultPlayerHealth = 100;
+
+    // Events for other systems
+    public event Action<PlayerStats> OnPlayerStatsChanged;
+    public event Action<CardSO> OnCardPlayed;
+    public event Action<int> OnPlayerHealed;
+    
+    void Start()
+    {
+        // Find other managers
+        deckManager = FindFirstObjectByType<DeckManager>();
+        turnManager = FindFirstObjectByType<TurnManager>();
+        
+        // Create default player if none exists
+        if (player == null)
+        {
+            player = new Player(defaultPlayerHealth);
+            Debug.Log("PlayerManager: Created new player with 100 HP");
+        }
+    }
+
+    #region Player Setup
+    
+    public void SetPlayer(Player p)
     {
         player = p;
-        deckManager = deck;
+        NotifyStatsChanged();
     }
 
     public Player GetPlayer()
@@ -27,35 +51,70 @@ public class PlayerManager : MonoBehaviour
     {
         deckManager = deck;
     }
+    
+    #endregion
 
-    public void StartTurn(int cardsToDraw = 2)
+    #region Turn Management
+    
+    public void StartTurn(int cardsToDraw = -1)
     {
+        // Use TurnManager's setting if not specified
+        if (cardsToDraw == -1)
+            cardsToDraw = turnManager?.GetCardsToDrawEachTurn() ?? 2;
+            
         player.ResetTurnStats();
         DrawCards(cardsToDraw);
+        
+        Debug.Log($"PlayerManager: Turn started - Drew {cardsToDraw} cards");
+        NotifyStatsChanged();
+    }
+    
+    #endregion
+
+    #region Player Actions
+    
+    public void HealPlayer(int amount = 10)
+    {
+        player.PlayerHealth.Heal(amount);
+        Debug.Log($"PlayerManager: Player healed for {amount} HP");
+        
+        OnPlayerHealed?.Invoke(amount);
+        NotifyStatsChanged();
     }
 
-    public void HealPlayer(int amount)
+    public bool AttackPathogen(Pathogen pathogen, int damage)
     {
-        player.Heal(amount);
-    }
-
-    public bool AttackPathogen(PathogenSO pathogen, int damage)
-    {
-        if (pathogen != null && pathogen.maxHitPoints > 0)
+        if (pathogen != null && pathogen.IsAlive())
         {
             pathogen.TakeDamage(damage);
-            Debug.Log($"Attacked {pathogen.pathogenName} for {damage} damage");
+            Debug.Log($"PlayerManager: Attacked {pathogen.GetPathogenName()} for {damage} damage");
             return true;
         }
         return false;
     }
+    
+    #endregion
 
-    public bool PlayCard(CardSO card, PathogenSO target = null)
+    #region Card Management
+    
+    public bool PlayCard(CardSO card, Pathogen target = null)
     {
-        if (player.Hand.Contains(card))
+        if (!player.Hand.Contains(card))
         {
-            return player.PlayCard(card, target);
+            Debug.LogWarning("PlayerManager: Card not in player hand");
+            return false;
         }
+        
+        // Play the card
+        if (player.PlayCard(card, target))
+        {
+            Debug.Log($"PlayerManager: Played {card.cardName}");
+            
+            OnCardPlayed?.Invoke(card);
+            NotifyStatsChanged();
+            return true;
+        }
+        
         return false;
     }
 
@@ -63,28 +122,54 @@ public class PlayerManager : MonoBehaviour
     {
         if (deckManager == null)
         {
+            Debug.LogWarning("PlayerManager: No DeckManager assigned");
             return;
         }
 
+        int cardsDrawn = 0;
         for (int i = 0; i < count; i++)
         {
             if (player.Hand.Count >= MAX_HAND_SIZE)
             {
+                Debug.Log("PlayerManager: Hand is full, cannot draw more cards");
                 break;
             }
 
             CardSO drawnCard = deckManager.DrawCard();
             if (drawnCard != null)
             {
-                player.AddCardToHand(drawnCard);
+                player.PlayerCards.AddCardToHand(drawnCard);
+                cardsDrawn++;
             }
             else
             {
+                Debug.Log("PlayerManager: No more cards to draw");
                 break;
             }
         }
+        
+        Debug.Log($"PlayerManager: Drew {cardsDrawn} cards");
+        NotifyStatsChanged();
     }
 
+    public bool CanPlayCard(CardSO card)
+    {
+        return player.Hand.Contains(card);
+    }
+
+    public void ApplyCardEffect(CardSO card, Pathogen target = null)
+    {
+        if (CanPlayCard(card))
+        {
+            card.ApplyEffect(player, player.PlayedCards, target);
+            NotifyStatsChanged();
+        }
+    }
+    
+    #endregion
+
+    #region Getters
+    
     public List<CardSO> GetPlayerHand()
     {
         return new List<CardSO>(player.Hand);
@@ -95,28 +180,15 @@ public class PlayerManager : MonoBehaviour
         return new List<CardSO>(player.PlayedCards);
     }
 
-    public bool CanPlayCard(CardSO card)
-    {
-        return player.Hand.Contains(card);
-    }
-
-    public void ApplyCardEffect(CardSO card, PathogenSO target = null)
-    {
-        if (CanPlayCard(card))
-        {
-            card.ApplyEffect(player, player.PlayedCards, target);
-        }
-    }
-
     public int GetHandSize()
     {
         return player.Hand.Count;
     }
+    
     public int GetMaxHandSize()
     {
         return MAX_HAND_SIZE;
     }
-    // Removed GetMaxCardsPerTurn() as this is now managed by TurnManager
 
     public PlayerStats GetPlayerStats()
     {
@@ -130,6 +202,17 @@ public class PlayerManager : MonoBehaviour
             PlayedCardsCount = player.PlayedCards.Count
         };
     }
+    
+    #endregion
+    
+    #region Helper Methods
+    
+    private void NotifyStatsChanged()
+    {
+        OnPlayerStatsChanged?.Invoke(GetPlayerStats());
+    }
+    
+    #endregion
 }
 
 [System.Serializable]
@@ -142,3 +225,5 @@ public struct PlayerStats
     public int HandSize;
     public int PlayedCardsCount;
 }
+
+

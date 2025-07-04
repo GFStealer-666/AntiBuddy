@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 34bbc305ef21f6145bef239a1fdadf99, type: 3}
+  m_Name: Dengue
+  m_EditorClassIdentifier: 
+  pathogenName: Dengue
+  maxHitPoints: 50
+  attackPower: 10
+  tokenDropOnDeath: 3
+  pathogenSprite: {fileID: 21300000, guid: fa81f1d2773bbb34c8d3b9f5ad0a564e, type: 3}
+  attackInterval: 2
+  abilities:
+    keys: 01000000
+    values:
+    - abilityType: 1
+      turnInterval: 1
+      value: 0
+      targetCards: []
+  description: 
+  cardTypeToBlocks: []

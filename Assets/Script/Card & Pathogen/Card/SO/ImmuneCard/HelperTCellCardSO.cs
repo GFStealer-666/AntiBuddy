@@ -9,7 +9,7 @@ public class HelperTCellCardSO : ImmuneCardSO
         cardType = ImmuneCardType.Instant; // Helper T activates immediately
     }
 
-    protected override void DoCardEffect(Player player, List<CardSO> playedCards, PathogenSO target)
+    protected override void DoCardEffect(Player player, List<CardSO> playedCards, Pathogen target)
     {
         // Empty effect - Helper T-Cell just enables combos
         // It does not have a direct effect on its own

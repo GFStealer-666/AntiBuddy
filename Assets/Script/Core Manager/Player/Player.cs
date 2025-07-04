@@ -1,107 +1,70 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+
 public class Player
 {
-    public int HP { get; set; }
-    public int MaxHP { get; set; }
-    public int Tokens { get; set; }
-    public int Defense { get; set; } // Flat defense amount
-    public int PercentageDefense { get; set; } // Percentage defense (0-100)
-    public List<CardSO> Deck { get; set; } // Personal deck of cards
-    public List<CardSO> Hand { get; set; } // Cards in player's hand
-    public List<CardSO> PlayedCards { get; set; } // Cards played this turn
+    public PlayerHealth PlayerHealth { get; private set; }
+    public PlayerDefense PlayerDefense { get; private set; }
+    public PlayerTokens PlayerTokens { get; private set; }
+    public PlayerCards PlayerCards { get; private set; }
+    public PlayerInventory PlayerInventory { get; private set; }
 
     public Player(int startingHP)
     {
-        HP = startingHP;
-        MaxHP = startingHP;
-        Tokens = 0;
-        Defense = 0;
-        PercentageDefense = 0;
-        Deck = new List<CardSO>();
-        Hand = new List<CardSO>();
-        PlayedCards = new List<CardSO>();
+        PlayerHealth = new PlayerHealth(startingHP);
+        PlayerDefense = new PlayerDefense();
+        PlayerTokens = new PlayerTokens();
+        PlayerCards = new PlayerCards();
+        PlayerInventory = new PlayerInventory();
     }
 
     public void TakeDamage(int damage)
     {
-        // Apply percentage defense first
-        int damageAfterPercentage = damage;
-        if (PercentageDefense > 0)
-        {
-            damageAfterPercentage = Mathf.RoundToInt(damage * (100 - PercentageDefense) / 100f);
-        }
+        int actualDamage = PlayerDefense.CalculateActualDamage(damage);
+        PlayerHealth.TakeDamage(actualDamage);
         
-        // Then apply flat defense
-        int actualDamage = Mathf.Max(0, damageAfterPercentage - Defense);
-        HP -= actualDamage;
-        if (HP < 0) HP = 0;
-        
-        Console.WriteLine($"Player took {actualDamage} damage (original: {damage}, after {PercentageDefense}% defense: {damageAfterPercentage}, blocked {damageAfterPercentage - actualDamage}). Current HP: {HP}");
+        Console.WriteLine($"Player took {actualDamage} damage (original: {damage}, blocked: {damage - actualDamage})");
     }
 
-    public void Heal(int amount)
+    public bool PlayCard(CardSO card, Pathogen target = null)
     {
-        HP = Mathf.Min(MaxHP, HP + amount);
-        Console.WriteLine($"Player healed {amount} HP. Current HP: {HP}");
-    }
-
-    public void AddTokens(int amount)
-    {
-        Tokens += amount;
-        Console.WriteLine($"Player received {amount} tokens. Current tokens: {Tokens}");
-    }
-
-    public void AddDefense(int amount)
-    {
-        Defense += amount;
-        Console.WriteLine($"Player gained {amount} defense. Current defense: {Defense}");
-    }
-
-    public void AddPercentageDefense(int percentage)
-    {
-        PercentageDefense = Mathf.Max(PercentageDefense, percentage); // Take the highest percentage
-        Console.WriteLine($"Player gained {percentage}% defense. Current percentage defense: {PercentageDefense}%");
-    }
-
-    public void ResetDefense()
-    {
-        Defense = 0;
-        PercentageDefense = 0;
-    }
-
-    public void AddCardToHand(CardSO card)
-    {
-        if (card != null)
-        {
-            Hand.Add(card);
-            Console.WriteLine($"Added {card.cardName} to hand. Hand size: {Hand.Count}");
-        }
-    }
-
-    public bool PlayCard(CardSO card, PathogenSO target = null)
-    {
-        if (Hand.Contains(card))
-        {
-            Hand.Remove(card);
-            PlayedCards.Add(card);
-            card.ApplyEffect(this, PlayedCards, target);
-            Console.WriteLine($"Played {card.cardName}");
-            return true;
-        }
-        Console.WriteLine($"Card {card.cardName} not found in hand!");
-        return false;
+        return PlayerCards.PlayCard(card, this, target);
     }
 
     public bool CanPlayCard(CardSO card)
     {
-        return Hand.Contains(card);
+        return PlayerCards.CanPlayCard(card);
+    }
+
+    public bool UseItem(ItemCard item)
+    {
+        if (item.CanUse(this))
+        {
+            item.UseItem(this);
+            return true;
+        }
+        return false;
+    }
+
+    public bool CanUseItem(ItemCard item)
+    {
+        return item.CanUse(this);
     }
 
     public void ResetTurnStats()
     {
-        ResetDefense();
-        PlayedCards.Clear();
+        PlayerDefense.ResetDefense();
+        PlayerCards.ResetTurnStats();
     }
+
+    // Convenience properties for backward compatibility
+    public int HP => PlayerHealth.HP;
+    public int MaxHP => PlayerHealth.MaxHP;
+    public int Tokens => PlayerTokens.Tokens;
+    public int Defense => PlayerDefense.Defense;
+    public int PercentageDefense => PlayerDefense.PercentageDefense;
+    public List<CardSO> Deck => PlayerCards.Deck;
+    public List<CardSO> Hand => PlayerCards.Hand;
+    public List<CardSO> PlayedCards => PlayerCards.PlayedCards;
 }

@@ -19,9 +19,8 @@ public class CardActionPanel : MonoBehaviour
 {
     [Header("UI References")]
     [SerializeField] private GameObject panelObject;
-    [SerializeField] private TextMeshProUGUI cardNameText;
-    [SerializeField] private TextMeshProUGUI cardDescriptionText;
-    [SerializeField] private Image cardIcon;
+    [SerializeField] private Image frontCard;
+    [SerializeField] private Image backCard;
     [SerializeField] private Button useButton;
     [SerializeField] private Button discardButton;
     [SerializeField] private Button cancelButton;
@@ -30,7 +29,7 @@ public class CardActionPanel : MonoBehaviour
     [SerializeField] private bool hideOnUse = true;
     [SerializeField] private bool hideOnDiscard = true;
     
-    private CardSO currentCard;
+    [SerializeField] private CardSO currentCard;
     private ICardActionHandler handUI;
     
     #region Unity Lifecycle
@@ -88,19 +87,16 @@ public class CardActionPanel : MonoBehaviour
         currentCard = null;
         handUI = null;
     }
-    
+
     private void UpdateDisplay()
     {
         if (currentCard == null) return;
-        
-        if (cardNameText != null)
-            cardNameText.text = currentCard.cardName;
-            
-        if (cardDescriptionText != null)
-            cardDescriptionText.text = currentCard.description;
-            
-        if (cardIcon != null && currentCard.cardIcon != null)
-            cardIcon.sprite = currentCard.cardIcon;
+
+        if (frontCard != null && currentCard.frontCardImage != null)
+            frontCard.sprite = currentCard.frontCardImage;
+
+        if (backCard != null && currentCard.backCardImage != null)
+            backCard.sprite = currentCard.backCardImage;
     }
     
     #endregion

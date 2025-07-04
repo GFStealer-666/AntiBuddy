@@ -11,15 +11,18 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler,
 {
     [Header("UI Components")]
     [SerializeField] private Image cardIcon;
+    [SerializeField] private Button cardButton; // Add button component
     
     [Header("Visual Settings")]
     [SerializeField] private Color normalColor = Color.white;
     [SerializeField] private Color hoverColor = Color.yellow;
     [SerializeField] private Color selectedColor = Color.green;
+    [SerializeField] private Color blockedColor = Color.red; // Add blocked color
     
     private CardSO cardData;
     private bool isSelected = false;
     private bool isHovered = false;
+    private bool isBlocked = false; // Add blocked state
     
     // Event for when this card is clicked
     public System.Action<CardUI> OnCardClicked;
@@ -44,8 +47,8 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler,
         if (cardData == null) return;
         
         // Update icon
-        if (cardIcon != null && cardData.cardIcon != null)
-            cardIcon.sprite = cardData.cardIcon;
+        if (cardIcon != null && cardData.frontCardImage != null)
+            cardIcon.sprite = cardData.frontCardImage;
             
         // Set initial color
         UpdateVisualState();
@@ -63,7 +66,14 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler,
         if (cardIcon == null) return;
         
         Color targetColor;
-        if (isSelected)
+        bool interactable = true;
+        
+        if (isBlocked)
+        {
+            targetColor = blockedColor;
+            interactable = false;
+        }
+        else if (isSelected)
             targetColor = selectedColor;
         else if (isHovered)
             targetColor = hoverColor;
@@ -71,6 +81,10 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler,
             targetColor = normalColor;
             
         cardIcon.color = targetColor;
+        
+        // Update button interactability
+        if (cardButton != null)
+            cardButton.interactable = interactable;
     }
     
     /// <summary>
@@ -80,6 +94,16 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler,
     public void SetSelected(bool selected)
     {
         isSelected = selected;
+        UpdateVisualState();
+    }
+    
+    /// <summary>
+    /// Set whether this card is blocked from being played
+    /// </summary>
+    /// <param name="blocked">True if blocked</param>
+    public void SetBlocked(bool blocked)
+    {
+        isBlocked = blocked;
         UpdateVisualState();
     }
     
@@ -96,6 +120,15 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler,
         return cardData;
     }
     
+    /// <summary>
+    /// Check if this card is currently blocked
+    /// </summary>
+    /// <returns>True if blocked</returns>
+    public bool IsBlocked()
+    {
+        return isBlocked;
+    }
+    
     #endregion
     
     #region Event Handling
@@ -106,6 +139,9 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler,
     /// <param name="eventData">Click event data</param>
     public void OnPointerClick(PointerEventData eventData)
     {
+        // Don't fire click if blocked
+        if (isBlocked) return;
+        
         // Fire the click event
         OnCardClicked?.Invoke(this);
     }
@@ -116,6 +152,8 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler,
     /// <param name="eventData">Pointer event data</param>
     public void OnPointerEnter(PointerEventData eventData)
     {
+        if (isBlocked) return; // No hover effect when blocked
+        
         isHovered = true;
         UpdateVisualState();
     }

@@ -16,7 +16,7 @@ public class CytotoxicCellCardSO : ImmuneCardSO
         return CardEffects.HasCardType<HelperTCellCardSO>(cardsInField);
     }
 
-    protected override void DoCardEffect(Player player, List<CardSO> playedCards, PathogenSO target)
+    protected override void DoCardEffect(Player player, List<CardSO> playedCards, Pathogen target)
     {
         // Effect only runs if CanActivateCombo returned true
         CardEffects.DealDamage(target, 25);

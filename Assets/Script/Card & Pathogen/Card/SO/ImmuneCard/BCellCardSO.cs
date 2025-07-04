@@ -16,7 +16,7 @@ public class BCellCardSO : ImmuneCardSO
         return CardEffects.HasCardType<HelperTCellCardSO>(cardsInField);
     }
 
-    protected override void DoCardEffect(Player player, List<CardSO> playedCards, PathogenSO target)
+    protected override void DoCardEffect(Player player, List<CardSO> playedCards, Pathogen target)
     {
         // Create antibody response - 50% damage reduction this turn
         CardEffects.AddPercentageDefense(player, 50);

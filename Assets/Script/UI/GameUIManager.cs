@@ -17,23 +17,35 @@ public class GameUIManager : MonoBehaviour
     public GameObject cardButtonPrefab;
 
     [Header("Game References")]
+    public GameManager gameManager;
     public TurnManager turnManager;
+    public PlayerManager playerManager;
+    public PathogenManager pathogenManager;
 
     private List<Button> cardButtons = new List<Button>();
 
     void Start()
     {
+        // Find managers if not assigned
+        if (gameManager == null)
+            gameManager = FindFirstObjectByType<GameManager>();
         if (turnManager == null)
             turnManager = FindFirstObjectByType<TurnManager>();
+        if (playerManager == null)
+            playerManager = FindFirstObjectByType<PlayerManager>();
+        if (pathogenManager == null)
+            pathogenManager = FindFirstObjectByType<PathogenManager>();
 
         // Subscribe to events
         TurnManager.OnTurnPhaseChanged += OnTurnPhaseChanged;
         TurnManager.OnTurnNumberChanged += OnTurnNumberChanged;
-        TurnManager.OnPlayerStatsChanged += OnPlayerStatsChanged;
+        
+        if (playerManager != null)
+            playerManager.OnPlayerStatsChanged += OnPlayerStatsChanged;
 
         // Setup button listeners
         if (endTurnButton != null)
-            endTurnButton.onClick.AddListener(() => turnManager.EndPlayerTurn());
+            endTurnButton.onClick.AddListener(() => gameManager?.EndTurnButtonPressed());
 
         UpdateUI();
     }
@@ -43,7 +55,9 @@ public class GameUIManager : MonoBehaviour
         // Unsubscribe from events
         TurnManager.OnTurnPhaseChanged -= OnTurnPhaseChanged;
         TurnManager.OnTurnNumberChanged -= OnTurnNumberChanged;
-        TurnManager.OnPlayerStatsChanged -= OnPlayerStatsChanged;
+        
+        if (playerManager != null)
+            playerManager.OnPlayerStatsChanged -= OnPlayerStatsChanged;
     }
 
     void OnTurnPhaseChanged(TurnPhase phase)
@@ -88,7 +102,6 @@ public class GameUIManager : MonoBehaviour
         OnTurnPhaseChanged(turnManager.GetCurrentPhase());
         OnTurnNumberChanged(turnManager.GetTurnNumber());
         
-        var playerManager = turnManager.GetPlayerManager();
         if (playerManager != null)
         {
             OnPlayerStatsChanged(playerManager.GetPlayerStats());
@@ -97,7 +110,7 @@ public class GameUIManager : MonoBehaviour
 
     void UpdateCardDisplay()
     {
-        if (turnManager == null || cardContainer == null || cardButtonPrefab == null) return;
+        if (gameManager == null || cardContainer == null || cardButtonPrefab == null) return;
 
         // Clear existing card buttons
         foreach (var button in cardButtons)
@@ -108,7 +121,7 @@ public class GameUIManager : MonoBehaviour
         cardButtons.Clear();
 
         // Create buttons for cards in hand
-        var playerHand = turnManager.GetPlayerHand();
+        var playerHand = gameManager.GetPlayerHand();
         foreach (var card in playerHand)
         {
             CreateCardButton(card);
@@ -126,6 +139,8 @@ public class GameUIManager : MonoBehaviour
             
             // Set card text
             TextMeshProUGUI buttonText = button.GetComponentInChildren<TextMeshProUGUI>();
+            if (buttonText != null)
+                buttonText.text = card.cardName;
             
             // Set button action
             button.onClick.AddListener(() => PlayCard(card));
@@ -143,29 +158,16 @@ public class GameUIManager : MonoBehaviour
 
     void PlayCard(CardSO card)
     {
-        if (turnManager == null) return;
+        if (gameManager == null) return;
 
-        // For now, play without target (you can enhance this to include target selection)
-        PathogenSO target = null;
-        var pathogenManager = turnManager.GetPathogenManager();
-        
-        if (pathogenManager != null && pathogenManager.pathogens.Count > 0)
-        {
-            // Auto-target first living pathogen
-            foreach (var pathogen in pathogenManager.pathogens)
-            {
-                if (pathogen.maxHitPoints > 0)
-                {
-                    target = pathogen;
-                    break;
-                }
-            }
-        }
+        // Get current targeted pathogen
+        Pathogen target = gameManager.GetCurrentTargetedPathogen();
 
-        bool success = turnManager.PlayCard(card, target);
+        bool success = gameManager.PlayCard(card, target);
         if (success)
         {
             Debug.Log($"Successfully played {card.cardName}");
+            UpdateCardDisplay(); // Refresh UI after playing card
         }
         else
         {
@@ -176,8 +178,7 @@ public class GameUIManager : MonoBehaviour
     // Public method for external UI elements to end turn
     public void EndTurn()
     {
-        if (turnManager != null)
-            turnManager.EndPlayerTurn();
+        if (gameManager != null)
+            gameManager.EndTurnButtonPressed();
     }
-
 }

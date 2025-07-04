@@ -9,7 +9,7 @@ public abstract class ImmuneCardSO : CardSO
     [Header("Activation Tracking")]
     public bool hasActivatedThisTurn = false; // Track if effect has been applied this turn
     
-    public override void ApplyEffect(Player player, List<CardSO> playedCards, PathogenSO target)
+    public override void ApplyEffect(Player player, List<CardSO> playedCards, Pathogen target)
     {
         // Check if already activated this turn
         if (hasActivatedThisTurn)
@@ -33,7 +33,7 @@ public abstract class ImmuneCardSO : CardSO
     }
     
     // Virtual method that derived classes can override for their specific effects
-    protected virtual void DoCardEffect(Player player, List<CardSO> playedCards, PathogenSO target)
+    protected virtual void DoCardEffect(Player player, List<CardSO> playedCards, Pathogen target)
     {
         // Default implementation - derived classes should override this
         Debug.Log($"{cardName} effect applied");

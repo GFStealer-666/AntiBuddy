@@ -1,27 +1,23 @@
 using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
 
 /// <summary>
-/// Main game manager that coordinates game state, pathogens, and card blocking
+/// Main game manager that coordinates overall game flow and other managers
+/// Handles turn transitions and game state changes
 /// </summary>
 public class GameManager : MonoBehaviour
 {
-    [Header("Game State")]
-    [SerializeField] private Player player;
-    [SerializeField] private List<PathogenSO> activePathogens = new List<PathogenSO>();
-    [SerializeField] private PlayerHandUI playerHandUI;
-    [SerializeField] private DeckManager deckManager;
+    [Header("Core Managers")]
+    [SerializeField] private TurnManager turnManager;
+    [SerializeField] private PlayerManager playerManager;
+    [SerializeField] private PathogenManager pathogenManager;
+    [SerializeField] private GameStateManager gameStateManager;
     
-    [Header("Turn Management")]
-    [SerializeField] private int currentTurn = 1;
-    [SerializeField] private bool isPlayerTurn = true;
-    
-    // Events
-    public System.Action<int> OnTurnStart;
-    public System.Action<int> OnTurnEnd;
-    public System.Action<PathogenSO> OnPathogenAdded;
-    public System.Action<PathogenSO> OnPathogenRemoved;
+    // Events for other systems to listen to
+    public System.Action OnPlayerTurnStart;
+    public System.Action OnPlayerTurnEnd;
+    public System.Action OnPathogenTurnStart;
+    public System.Action OnPathogenTurnEnd;
     public System.Action OnGameOver;
     public System.Action OnGameWon;
     
@@ -29,144 +25,62 @@ public class GameManager : MonoBehaviour
     
     void Start()
     {
-        InitializeGame();
+        InitializeManagers();
+        StartGame();
     }
     
-    private void InitializeGame()
+    private void InitializeManagers()
     {
-        // Find components if not assigned
-        if (playerHandUI == null)
-            playerHandUI = FindFirstObjectByType<PlayerHandUI>();
-            
-        if (deckManager == null)
-            deckManager = FindFirstObjectByType<DeckManager>();
+        // Find managers if not assigned
+        if (turnManager == null)
+            turnManager = FindFirstObjectByType<TurnManager>();
+        if (playerManager == null)
+            playerManager = FindFirstObjectByType<PlayerManager>();
+        if (pathogenManager == null)
+            pathogenManager = FindFirstObjectByType<PathogenManager>();
+        if (gameStateManager == null)
+            gameStateManager = GameStateManager.Instance;
         
-        // Create player if not assigned
-        if (player == null)
+        // Subscribe to manager events
+        if (pathogenManager != null)
         {
-            player = new Player(100); // Starting HP
+            pathogenManager.OnAllPathogensDefeated += HandleGameWon;
         }
         
-        // Set player reference in PlayerHandUI
-        if (playerHandUI != null && player != null)
-        {
-            playerHandUI.SetPlayer(player);
-        }
-        
+        Debug.Log("GameManager: All managers initialized");
+    }
+    
+    private void StartGame()
+    {
+        gameStateManager?.StartGame();
         StartPlayerTurn();
     }
     
     #endregion
     
-    #region Pathogen Management
-    
-    public void AddPathogen(PathogenSO pathogen)
-    {
-        if (pathogen != null && !activePathogens.Contains(pathogen))
-        {
-            activePathogens.Add(pathogen);
-            OnPathogenAdded?.Invoke(pathogen);
-            
-            // Pathogen added - PlayerHandUI will automatically update on next refresh
-            Debug.Log($"Pathogen added: {pathogen.name}");
-        }
-    }
-    
-    public void RemovePathogen(PathogenSO pathogen)
-    {
-        if (activePathogens.Contains(pathogen))
-        {
-            activePathogens.Remove(pathogen);
-            OnPathogenRemoved?.Invoke(pathogen);
-            
-            // Pathogen removed - PlayerHandUI will automatically update on next refresh
-            Debug.Log($"Pathogen removed: {pathogen.name}");
-            
-            // Check win condition
-            if (activePathogens.Count == 0)
-            {
-                OnGameWon?.Invoke();
-            }
-        }
-    }
-    
-    public List<PathogenSO> GetActivePathogens()
-    {
-        return new List<PathogenSO>(activePathogens);
-    }
-    
-    #endregion
-    
-    #region Card Blocking System
-    
-    public bool IsCardBlocked(System.Type cardType)
-    {
-        // Check if any active pathogen blocks this card type
-        foreach (var pathogen in activePathogens)
-        {
-            if (pathogen != null && pathogen.IsCardBlocked(cardType))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    public List<PathogenSO> GetPathogensBlockingCard(System.Type cardType)
-    {
-        return activePathogens.Where(p => p != null && p.IsCardBlocked(cardType)).ToList();
-    }
-    
-    #endregion
-    
-    #region Turn Management
+    #region Turn Flow Control
     
     public void StartPlayerTurn()
     {
-        isPlayerTurn = true;
-        currentTurn++;
+        Debug.Log("=== PLAYER TURN STARTED ===");
         
-        Debug.Log($"Player Turn {currentTurn} started");
+        // Notify TurnManager to start player turn
+        turnManager?.StartPlayerTurn();
         
-        // Reset player stats for new turn
-        if (player != null)
-            player.ResetTurnStats();
+        // Notify PlayerManager to prepare for turn
+        playerManager?.StartTurn();
         
-        // Draw cards from deck
-        if (deckManager != null && player != null)
-        {
-            // Draw cards at start of turn (you can adjust the number as needed)
-            for (int i = 0; i < 3; i++) // Draw 3 cards per turn
-            {
-                CardSO drawnCard = deckManager.DrawCard();
-                if (drawnCard != null)
-                {
-                    player.AddCardToHand(drawnCard);
-                    Debug.Log($"Drew card: {drawnCard.cardName}");
-                }
-            }
-        }
-        
-        // Notify pathogens of turn start
-        foreach (var pathogen in activePathogens)
-        {
-            if (pathogen != null)
-            {
-                var playedCards = player?.PlayedCards ?? new List<CardSO>();
-                pathogen.OnTurnStart(playedCards);
-            }
-        }
-        
-        OnTurnStart?.Invoke(currentTurn);
+        OnPlayerTurnStart?.Invoke();
     }
     
     public void EndPlayerTurn()
     {
-        if (!isPlayerTurn) return;
+        Debug.Log("=== PLAYER TURN ENDED ===");
         
-        Debug.Log($"Player Turn {currentTurn} ended");
+        // Notify TurnManager to end player turn
+        turnManager?.EndPlayerTurn();
         
-        OnTurnEnd?.Invoke(currentTurn);
+        OnPlayerTurnEnd?.Invoke();
         
         // Start pathogen turn
         StartPathogenTurn();
@@ -174,89 +88,130 @@ public class GameManager : MonoBehaviour
     
     public void StartPathogenTurn()
     {
-        isPlayerTurn = false;
+        Debug.Log("=== PATHOGEN TURN STARTED ===");
         
-        Debug.Log("Pathogen Turn started");
+        // Notify TurnManager to start pathogen turn
+        turnManager?.StartPathogenTurn();
         
-        // Process pathogen attacks
-        foreach (var pathogen in activePathogens.ToList()) // ToList to avoid modification during iteration
+        // Execute pathogen actions through PathogenManager
+        if (pathogenManager != null && playerManager != null)
         {
-            if (pathogen != null && player != null)
-            {
-                pathogen.AttackPlayer(player);
-                
-                // Check if player is defeated
-                if (player.HP <= 0)
-                {
-                    OnGameOver?.Invoke();
-                    return; // Stop processing if game is over
-                }
-            }
+            var player = playerManager.GetPlayer();
+            var playedCards = playerManager.GetPlayedCards();
+            pathogenManager.ExecutePathogenTurn(player, playedCards);
         }
         
-        // Automatically start next player turn after a delay
-        Invoke(nameof(StartPlayerTurn), 2f);
-    }
-    
-    #endregion
-    
-    #region Game Events
-    
-    private void OnCardPlayedHandler(CardSO card)
-    {
-        Debug.Log($"Card played: {card.cardName}");
+        OnPathogenTurnStart?.Invoke();
         
-        // Update pathogen states if needed
-        foreach (var pathogen in activePathogens)
+        // Check if player died
+        if (playerManager?.GetPlayer()?.HP <= 0)
         {
-            if (pathogen != null)
-            {
-                // You can add specific card reaction logic here
-            }
+            HandleGameOver();
+            return;
         }
+        
+        // End pathogen turn after delay
+        Invoke(nameof(EndPathogenTurn), 2f);
+    }
+    
+    public void EndPathogenTurn()
+    {
+        Debug.Log("=== PATHOGEN TURN ENDED ===");
+        
+        OnPathogenTurnEnd?.Invoke();
+        
+        // Start next player turn
+        StartPlayerTurn();
     }
     
     #endregion
     
-    #region Game State Queries
+    #region Game State Management
     
-    public bool IsPlayerTurn() => isPlayerTurn;
-    public int GetCurrentTurn() => currentTurn;
-    public Player GetPlayer() => player;
-    
-    public bool IsGameOver()
+    private void HandleGameOver()
     {
-        return player != null && player.HP <= 0;
+        Debug.Log("=== GAME OVER ===");
+        gameStateManager?.EndGame(false);
+        OnGameOver?.Invoke();
     }
     
-    public bool IsGameWon()
+    private void HandleGameWon()
     {
-        return activePathogens.Count == 0;
+        Debug.Log("=== PLAYER WINS ===");
+        gameStateManager?.EndGame(true);
+        OnGameWon?.Invoke();
     }
     
     #endregion
     
-    #region Public Methods
+    #region Public Interface
     
-    // Method to manually trigger turn end (for UI button)
+    public bool PlayCard(CardSO card, Pathogen target = null)
+    {
+        // Check if it's player turn through TurnManager
+        if (!turnManager.IsPlayerTurn())
+        {
+            Debug.LogWarning("Cannot play cards during pathogen turn");
+            return false;
+        }
+        
+        // Check if card is blocked by pathogens
+        if (pathogenManager.IsCardBlocked(card.GetType()))
+        {
+            Debug.LogWarning($"{card.cardName} is blocked by pathogen abilities");
+            return false;
+        }
+        
+        // Try to play card through PlayerManager and TurnManager
+        if (playerManager.PlayCard(card, target))
+        {
+            turnManager.OnCardPlayed(card);
+            
+            // Check if turn should end
+            if (!turnManager.CanPlayMoreCards())
+            {
+                EndPlayerTurn();
+            }
+            
+            return true;
+        }
+        
+        return false;
+    }
+    
+    // Getters for other systems
+    public bool IsPlayerTurn() => turnManager?.IsPlayerTurn() ?? false;
+    public int GetCurrentTurn() => turnManager?.GetTurnNumber() ?? 0;
+    public Player GetPlayer() => playerManager?.GetPlayer();
+    public List<Pathogen> GetActivePathogens() => pathogenManager?.GetActivePathogens() ?? new List<Pathogen>();
+    public bool IsGameOver() => gameStateManager?.CurrentState == GameState.GameOver;
+    
+
+
+    public List<CardSO> GetPlayerHand() => playerManager?.GetPlayerHand() ?? new List<CardSO>();
+    public Pathogen GetCurrentTargetedPathogen() => pathogenManager?.GetCurrentPathogen();
+    public bool IsGameWon() => pathogenManager?.IsPathogenAllDefeated() ?? false;
+    
+    #endregion
+    
+    #region UI Methods
+    
+    [ContextMenu("End Turn")]
     public void EndTurnButtonPressed()
     {
-        if (isPlayerTurn)
+        if (turnManager.GetCurrentPhase() == TurnPhase.PlayerTurn)
         {
             EndPlayerTurn();
         }
     }
     
-    // Method to add a pathogen manually (for testing or events)
-    public void SpawnPathogen(PathogenSO pathogenPrefab)
+    [ContextMenu("Heal Player")]
+    public void HealPlayerDebug()
     {
-        if (pathogenPrefab != null)
-        {
-            // Create instance of the pathogen
-            PathogenSO newPathogen = Instantiate(pathogenPrefab);
-            AddPathogen(newPathogen);
-        }
+        playerManager?.HealPlayer(10);
     }
+
     
     #endregion
 }
+    

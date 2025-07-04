@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 002ab27ceb0195549b05f0b6e52d0eab, type: 3}
+  m_Name: Covid19
+  m_EditorClassIdentifier: 
+  pathogenName: Covid-19
+  maxHitPoints: 50
+  attackPower: 8
+  tokenDropOnDeath: 3
+  pathogenSprite: {fileID: 21300000, guid: b9b03a74ec4e9934cad073f9d624a279, type: 3}
+  attackInterval: 1
+  abilities:
+    keys: 
+    values: []
+  description: 

@@ -1,57 +1,45 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public abstract class PathogenSO : ScriptableObject
 {
-    [Space(10)]
+    [Header("Basic Stats")]
     public string pathogenName;
     public int maxHitPoints;
     public int attackPower;
+    public int tokenDropOnDeath = 1; 
+    public Sprite pathogenSprite;
     
-    [Space(10)]
-    [Header("Turn System")]
-    protected int currentTurn = 0;
-
-    public virtual void TakeDamage(int damage)
+    [Header("Attack Pattern")]
+    public int attackInterval = 1; // How often pathogen attacks
+    
+    [Header("Special Abilities")]
+    public PathogenAbilityDictionary abilities = new PathogenAbilityDictionary();
+    
+    [Header("Description")]
+    [TextArea(3, 5)]
+    public string description;
+    
+    // Helper methods
+    public bool HasAbility(PathogenAbilityType abilityType)
     {
-        maxHitPoints -= damage;
-        if (maxHitPoints < 0) maxHitPoints = 0;
-        Debug.Log($"{pathogenName} took {damage} damage. HP left: {maxHitPoints}");
+        return abilities.ContainsKey(abilityType);
     }
-
-    // New method to check if a card type is blocked by this pathogen
-    public virtual bool IsCardBlocked(System.Type cardType)
+    
+    public PathogenAbilityData GetAbility(PathogenAbilityType abilityType)
     {
-        return false; // By default, no cards are blocked
+        return abilities.TryGetValue(abilityType, out PathogenAbilityData data) ? data : null;
     }
-
-    // New method to determine if pathogen should attack this turn
-    public virtual bool ShouldAttackThisTurn()
+    
+    public int GetAbilityInterval(PathogenAbilityType abilityType)
     {
-        return true; // By default, attack every turn
+        var ability = GetAbility(abilityType);
+        return ability?.turnInterval ?? 0;
     }
-
-    // Called at the start of each turn
-    public virtual void OnTurnStart(System.Collections.Generic.List<CardSO> playedCards)
+    
+    public int GetAbilityValue(PathogenAbilityType abilityType)
     {
-        currentTurn++;
-    }
-
-    public virtual void AttackPlayer(Player player)
-    {
-        if (ShouldAttackThisTurn())
-        {
-            player.TakeDamage(attackPower);
-            Debug.Log($"{pathogenName} attacks the player for {attackPower} HP.");
-        }
-        else
-        {
-            Debug.Log($"{pathogenName} is not attacking this turn.");
-        }
-    }
-
-    public virtual void Heal(int amount)
-    {
-        maxHitPoints += amount;
-        Debug.Log($"{pathogenName} healed for {amount} HP. Current HP: {maxHitPoints}");
+        var ability = GetAbility(abilityType);
+        return ability?.value ?? 0;
     }
 }

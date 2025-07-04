@@ -97,9 +97,9 @@ public class CardFieldUI : MonoBehaviour
         Image cardIcon = slotObj.transform.Find("CardIcon")?.GetComponent<Image>();
         if (cardIcon != null)
         {
-            if (slot.isOccupied && slot.card != null && slot.card.cardIcon != null)
+            if (slot.isOccupied && slot.card != null && slot.card.frontCardImage != null)
             {
-                cardIcon.sprite = slot.card.cardIcon;
+                cardIcon.sprite = slot.card.frontCardImage;
                 cardIcon.gameObject.SetActive(true);
             }
             else
