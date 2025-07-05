@@ -26,7 +26,7 @@ public class PathogenHealthBarUI : MonoBehaviour
         }
         
         // Initially hide the UI
-        gameObject.SetActive(false);
+        // gameObject.SetActive(false);
     }
     
     private void OnPathogenSpawned(Pathogen pathogen)

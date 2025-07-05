@@ -3,7 +3,7 @@ using UnityEngine;
 public class PlayerUI : MonoBehaviour
 {
     [Header("UI Components")]
-    [SerializeField] private PlayerHealthUI healthUI;
+    [SerializeField] private PlayerHealthBarUI healthUI;
     [SerializeField] private PlayerTokensUI tokensUI;
     [SerializeField] private PlayerHandUI handUI;
     
@@ -20,7 +20,7 @@ public class PlayerUI : MonoBehaviour
         }
         
         // Auto-find components if not assigned
-        if (healthUI == null) healthUI = GetComponentInChildren<PlayerHealthUI>();
+        if (healthUI == null) healthUI = GetComponentInChildren<PlayerHealthBarUI>();
         if (tokensUI == null) tokensUI = GetComponentInChildren<PlayerTokensUI>();
         if (handUI == null) handUI = GetComponentInChildren<PlayerHandUI>();
     }

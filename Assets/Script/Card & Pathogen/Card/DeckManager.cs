@@ -47,16 +47,40 @@ public class DeckManager : MonoBehaviour
     // Using System.Random for better performance in Unity
     private readonly System.Random rand = new System.Random();
     #endregion
+    
+    private void Awake()
+    {
+        // Initialize deck list early to prevent null reference
+        if (deck == null)
+        {
+            deck = new List<CardSO>();
+        }
+    }
+    
     private void Start()
     {
+        // Initialize deck list if null
+        if (deck == null)
+        {
+            deck = new List<CardSO>();
+        }
+        
         GenerateDeck();
         ShuffleDeck();
+        
+        Debug.Log($"DeckManager initialized with {deck.Count} cards");
     }
 
     #region Deck Generation
     // Generate a full deck from the base cards
     private void GenerateDeck()
     {
+        // Initialize deck if null
+        if (deck == null)
+        {
+            deck = new List<CardSO>();
+        }
+        
         // Choose generation method based on settings
         if (useWeightedGeneration)
         {
@@ -64,9 +88,9 @@ public class DeckManager : MonoBehaviour
             return;
         }
 
-        if (baseCards.Count == 0)
+        if (baseCards == null || baseCards.Count == 0)
         {
-            Debug.LogWarning("No base cards assigned to DeckManager!");
+            Debug.LogError("No base cards assigned to DeckManager! Cannot generate deck.");
             return;
         }
 
@@ -78,7 +102,17 @@ public class DeckManager : MonoBehaviour
         {
             // Pick a random base card and add a copy to the deck
             int randomIndex = rand.Next(baseCards.Count);
-            deck.Add(baseCards[randomIndex]);
+            CardSO cardToAdd = baseCards[randomIndex];
+            
+            if (cardToAdd != null)
+            {
+                deck.Add(cardToAdd);
+            }
+            else
+            {
+                Debug.LogWarning($"Base card at index {randomIndex} is null! Skipping...");
+                i--; // Retry this iteration
+            }
         }
         GenerateDeckComposition(deck);
         Debug.Log($"Generated random deck of {deck.Count} cards from {baseCards.Count} base card types");
@@ -138,7 +172,17 @@ public class DeckManager : MonoBehaviour
         while (deck.Count < totalDeckSize && baseCards.Count > 0)
         {
             int randomIndex = rand.Next(baseCards.Count);
-            deck.Add(baseCards[randomIndex]);
+            CardSO cardToAdd = baseCards[randomIndex];
+            
+            if (cardToAdd != null)
+            {
+                deck.Add(cardToAdd);
+            }
+            else
+            {
+                Debug.LogWarning($"Base card at index {randomIndex} is null! Skipping...");
+                // Continue the loop to try again
+            }
         }
 
         // Remove excess cards if we're over the totalDeckSize
@@ -173,14 +217,45 @@ public class DeckManager : MonoBehaviour
     // Draw a single card from the deck
     public CardSO DrawCard()
     {
-        if (deck.Count == 0)
+        // Ensure deck is initialized before drawing
+        if (deck == null || deck.Count == 0)
         {
-            Debug.LogWarning("Deck is empty! Cannot draw more cards.");
-            return null;
+            // Try to generate deck if it hasn't been done yet
+            if (deck == null || deck.Count == 0)
+            {
+                Debug.LogWarning("Deck is not initialized or empty! Attempting to generate deck...");
+                GenerateDeck();
+                
+                // If still empty after generation, return null
+                if (deck == null || deck.Count == 0)
+                {
+                    Debug.LogError("Failed to generate deck! Cannot draw cards.");
+                    return null;
+                }
+            }
         }
 
         int index = rand.Next(deck.Count);
         CardSO drawnCard = deck[index];
+        
+        // Check if the drawn card is null (safety check)
+        if (drawnCard == null)
+        {
+            Debug.LogError($"Drew null card at index {index}! This indicates deck corruption. Removing null entry.");
+            deck.RemoveAt(index);
+            
+            // Try to draw again if there are still cards
+            if (deck.Count > 0)
+            {
+                return DrawCard();
+            }
+            else
+            {
+                Debug.LogError("No valid cards left in deck after removing null entries!");
+                return null;
+            }
+        }
+        
         RemoveCard(index);
         if (shuffleOnDraw)
         {
@@ -470,6 +545,64 @@ public class DeckManager : MonoBehaviour
         }
         return false;
     }
+    #endregion
+
+    #region Debug and Validation
+    
+    [ContextMenu("Validate Deck Setup")]
+    private void ValidateDeckSetup()
+    {
+        Debug.Log("=== DECK VALIDATION ===");
+        
+        // Check base cards
+        if (baseCards == null || baseCards.Count == 0)
+        {
+            Debug.LogError("No base cards assigned! Deck cannot be generated.");
+            return;
+        }
+        
+        int nullBaseCards = 0;
+        for (int i = 0; i < baseCards.Count; i++)
+        {
+            if (baseCards[i] == null)
+            {
+                nullBaseCards++;
+                Debug.LogWarning($"Base card at index {i} is null!");
+            }
+        }
+        
+        Debug.Log($"Base Cards: {baseCards.Count} total, {nullBaseCards} null entries");
+        
+        // Check current deck
+        if (deck == null)
+        {
+            Debug.LogWarning("Deck is null!");
+        }
+        else
+        {
+            int nullDeckCards = deck.Count(card => card == null);
+            Debug.Log($"Current Deck: {deck.Count} total, {nullDeckCards} null entries");
+        }
+        
+        // Check weighted cards if using weighted generation
+        if (useWeightedGeneration && weightedCards != null)
+        {
+            float totalWeight = weightedCards.Sum(wc => wc.weightPercentage);
+            int nullWeightedCards = weightedCards.Count(wc => wc.card == null);
+            Debug.Log($"Weighted Cards: {weightedCards.Count} total, {nullWeightedCards} null entries, {totalWeight:F1}% total weight");
+        }
+        
+        Debug.Log("=== END DECK VALIDATION ===");
+    }
+    
+    [ContextMenu("Force Regenerate Deck")]
+    private void ForceRegenerateDeck()
+    {
+        Debug.Log("Force regenerating deck...");
+        GenerateDeck();
+        ValidateDeckSetup();
+    }
+    
     #endregion
 }
 

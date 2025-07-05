@@ -16,7 +16,7 @@ public class PlayerTokensUI : MonoBehaviour
 
     private void OnEnable()
     {
-        if(player == null)
+        if (player != null)
         {
             player.PlayerTokens.OnTokensChanged += CheckForTokenChanges;
         }
@@ -38,6 +38,12 @@ public class PlayerTokensUI : MonoBehaviour
             if (gameManager != null)
             {
                 player = gameManager.GetPlayer();
+                
+                // Subscribe to events if player was found
+                if (player != null)
+                {
+                    player.PlayerTokens.OnTokensChanged += CheckForTokenChanges;
+                }
             }
         }
         
@@ -59,12 +65,25 @@ public class PlayerTokensUI : MonoBehaviour
     {
         if (player == null || tokensText == null) return;
         
-        tokensText.text = player.Tokens.ToString();
+        tokensText.text = $"{player.Tokens.ToString()} Tokens";
     }
     
     public void SetPlayer(Player newPlayer)
     {
+        // Unsubscribe from old player if any
+        if (player != null)
+        {
+            player.PlayerTokens.OnTokensChanged -= CheckForTokenChanges;
+        }
+        
         player = newPlayer;
+        
+        // Subscribe to new player if not null
+        if (player != null)
+        {
+            player.PlayerTokens.OnTokensChanged += CheckForTokenChanges;
+        }
+        
         UpdateTokensDisplay();
     }
 }

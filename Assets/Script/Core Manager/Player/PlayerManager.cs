@@ -9,8 +9,8 @@ using UnityEngine;
 public class PlayerManager : MonoBehaviour
 {
     [SerializeField] private Player player;
-    private DeckManager deckManager;
-    private TurnManager turnManager;
+    [SerializeField] private DeckManager deckManager;
+    [SerializeField] private TurnManager turnManager;
     private readonly int MAX_HAND_SIZE = 5;
 
     [SerializeField] private int defaultPlayerHealth = 100;
@@ -31,6 +31,31 @@ public class PlayerManager : MonoBehaviour
         {
             player = new Player(defaultPlayerHealth);
             Debug.Log("PlayerManager: Created new player with 100 HP");
+            
+            // Draw initial cards after a frame delay to ensure DeckManager is ready
+            StartCoroutine(DrawInitialCardsCoroutine());
+        }
+    }
+    
+    private System.Collections.IEnumerator DrawInitialCardsCoroutine()
+    {
+        // Wait one frame to ensure other managers are initialized
+        yield return null;
+        
+        // Validate deck manager is available and ready
+        if (deckManager == null)
+        {
+            deckManager = FindFirstObjectByType<DeckManager>();
+        }
+        
+        if (deckManager != null)
+        {
+            Debug.Log("PlayerManager: Drawing initial 5 cards");
+            DrawCards(5);
+        }
+        else
+        {
+            Debug.LogError("PlayerManager: DeckManager still not found after initialization delay!");
         }
     }
 
