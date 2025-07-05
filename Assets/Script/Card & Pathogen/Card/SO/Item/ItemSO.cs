@@ -2,7 +2,7 @@ using UnityEngine;
 using System;
 
 [CreateAssetMenu(fileName = "New Item Card", menuName = "Cards/Item Card")]
-public class ItemCard : ScriptableObject
+public class ItemSO : ScriptableObject
 {
     [Header("Basic Info")]
     public string itemName;

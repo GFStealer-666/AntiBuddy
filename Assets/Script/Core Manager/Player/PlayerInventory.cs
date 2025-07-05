@@ -6,10 +6,10 @@ using UnityEngine;
 [System.Serializable]
 public class InventorySlot
 {
-    public ItemCard item;
+    public ItemSO item;
     public int quantity;
 
-    public InventorySlot(ItemCard item, int quantity = 1)
+    public InventorySlot(ItemSO item, int quantity = 1)
     {
         this.item = item;
         this.quantity = quantity;
@@ -21,9 +21,9 @@ public class PlayerInventory
     public List<InventorySlot> Items { get; private set; }
     public int MaxSlots { get; private set; }
 
-    public event Action<ItemCard, int> OnItemAdded;
-    public event Action<ItemCard, int> OnItemRemoved;
-    public event Action<ItemCard> OnItemUsed;
+    public event Action<ItemSO, int> OnItemAdded;
+    public event Action<ItemSO, int> OnItemRemoved;
+    public event Action<ItemSO> OnItemUsed;
 
     public PlayerInventory(int maxSlots = 20)
     {
@@ -31,7 +31,7 @@ public class PlayerInventory
         MaxSlots = maxSlots;
     }
 
-    public bool PurchaseItem(ItemCard item, PlayerTokens playerTokens)
+    public bool PurchaseItem(ItemSO item, PlayerTokens playerTokens)
     {
         if (!playerTokens.CanAfford(item.cost))
         {
@@ -55,7 +55,7 @@ public class PlayerInventory
         return false;
     }
 
-    public bool AddItem(ItemCard item, int quantity = 1)
+    public bool AddItem(ItemSO item, int quantity = 1)
     {
         if (!CanAddItem(item, quantity))
             return false;
@@ -76,7 +76,7 @@ public class PlayerInventory
         }
     }
 
-    public bool UseItem(ItemCard item, Player player)
+    public bool UseItem(ItemSO item, Player player)
     {
         var slot = Items.FirstOrDefault(s => s.item == item);
         if (slot == null)
@@ -102,7 +102,7 @@ public class PlayerInventory
         return true;
     }
 
-    public bool RemoveItem(ItemCard item, int quantity = 1)
+    public bool RemoveItem(ItemSO item, int quantity = 1)
     {
         var slot = Items.FirstOrDefault(s => s.item == item);
         if (slot == null || slot.quantity < quantity)
@@ -119,7 +119,7 @@ public class PlayerInventory
         return true;
     }
 
-    public bool CanAddItem(ItemCard item, int quantity = 1)
+    public bool CanAddItem(ItemSO item, int quantity = 1)
     {
         var existingSlot = Items.FirstOrDefault(slot => slot.item == item);
         if (existingSlot != null)
@@ -129,13 +129,13 @@ public class PlayerInventory
         return Items.Count < MaxSlots;
     }
 
-    public int GetItemCount(ItemCard item)
+    public int GetItemCount(ItemSO item)
     {
         var slot = Items.FirstOrDefault(s => s.item == item);
         return slot?.quantity ?? 0;
     }
 
-    public bool HasItem(ItemCard item)
+    public bool HasItem(ItemSO item)
     {
         return GetItemCount(item) > 0;
     }

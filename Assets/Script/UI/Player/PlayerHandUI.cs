@@ -104,9 +104,13 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
         {
             CreateCardUI(card);
         }
+        foreach (var itemCard in player.Item)
+        {
+            CreateItemUI(itemCard.item);
+        }
         
         // Update blocking status after creating all cards
-        UpdateCardBlocking();
+            UpdateCardBlocking();
     }
     
     private void ClearCardUIs()
@@ -125,14 +129,33 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
         }
         currentCardObjects.Clear();
     }
+    private void CreateItemUI(ItemSO item)
+    {
+        if (cardPrefab == null) return;
+
+        GameObject cardObject = Instantiate(cardPrefab, cardContainer);
+        CardUI cardUI = cardObject.GetComponent<CardUI>();
+
+        if (cardUI != null)
+        {
+            cardUI.Initialize(item);
+            cardUI.OnCardClicked += OnCardClicked;
+            currentCardObjects.Add(cardObject);
+        }
+        else
+        {
+            Debug.LogError("Card prefab must have CardUI component!");
+            Destroy(cardObject);
+        }
+    }
     
     private void CreateCardUI(CardSO card)
     {
         if (cardPrefab == null) return;
-        
+
         GameObject cardObject = Instantiate(cardPrefab, cardContainer);
         CardUI cardUI = cardObject.GetComponent<CardUI>();
-        
+
         if (cardUI != null)
         {
             cardUI.Initialize(card);

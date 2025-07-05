@@ -37,7 +37,7 @@ public class Player
         return PlayerCards.CanPlayCard(card);
     }
 
-    public bool UseItem(ItemCard item)
+    public bool UseItem(ItemSO item)
     {
         if (item.CanUse(this))
         {
@@ -47,7 +47,7 @@ public class Player
         return false;
     }
 
-    public bool CanUseItem(ItemCard item)
+    public bool CanUseItem(ItemSO item)
     {
         return item.CanUse(this);
     }
@@ -66,5 +66,6 @@ public class Player
     public int PercentageDefense => PlayerDefense.PercentageDefense;
     public List<CardSO> Deck => PlayerCards.Deck;
     public List<CardSO> Hand => PlayerCards.Hand;
+    public List<InventorySlot> Item => PlayerInventory.Items;
     public List<CardSO> PlayedCards => PlayerCards.PlayedCards;
 }

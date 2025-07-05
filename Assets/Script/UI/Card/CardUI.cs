@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 using TMPro;
+using Unity.VisualScripting;
 
 /// <summary>
 /// Simple card UI component for displaying card data and handling clicks
@@ -20,6 +21,7 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler,
     [SerializeField] private Color blockedColor = Color.red; // Add blocked color
     
     private CardSO cardData;
+    private ItemSO itemData;
     private bool isSelected = false;
     private bool isHovered = false;
     private bool isBlocked = false; // Add blocked state
@@ -38,20 +40,27 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler,
         cardData = card;
         UpdateDisplay();
     }
-    
+    // Overload constructor for Item
+    public void Initialize(ItemSO item)
+    {
+        itemData = item;
+        UpdateDisplay();
+    }
     /// <summary>
     /// Update the visual display based on current card data
     /// </summary>
     private void UpdateDisplay()
     {
-        if (cardData == null) return;
-        
+        if (cardData == null && itemData == null) return;
+
         // Update icon
         if (cardIcon != null && cardData.frontCardImage != null)
             cardIcon.sprite = cardData.frontCardImage;
-            
+
+        if (cardIcon != null && itemData.itemImage != null)
+            cardIcon.sprite = itemData.itemImage;
         // Set initial color
-        UpdateVisualState();
+            UpdateVisualState();
     }
     
     #endregion

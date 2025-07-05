@@ -131,7 +131,7 @@ public class TurnManager : MonoBehaviour
         Debug.Log($"=== Player Turn {turnNumber} Started ===");
         Debug.Log($"Cards allowed this turn: {cardsPerTurn}");
         
-        playerManager.StartTurn();
+        playerManager.StartTurn(cardsPlayedThisTurn);
         OnTurnPhaseChanged?.Invoke(currentPhase);
         OnPlayerStatsChanged?.Invoke(playerManager.GetPlayerStats());
         
