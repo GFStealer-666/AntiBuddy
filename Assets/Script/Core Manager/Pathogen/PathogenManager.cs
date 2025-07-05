@@ -21,12 +21,14 @@ public class PathogenManager : MonoBehaviour
     public event Action<Pathogen> OnPathogenDefeated;
     public event Action OnAllPathogensDefeated;
     public event Action<Pathogen> OnPathogenTargeted;
+    [Header("Debug Configuration")]
+    [SerializeField] private int pathogenHealth;
     
     #region Initialization 
     private void Start()
     {
         // Subscribe to TurnManager events
-        
+
         InitializePathogenQueue();
         SpawnNextPathogen();
     }
@@ -140,10 +142,8 @@ public class PathogenManager : MonoBehaviour
         {
             currentTargetedPathogen = null;
         }
-        
-        OnPathogenDefeated?.Invoke(pathogen);
         Debug.Log($"Pathogen destroyed: {pathogen.GetPathogenName()}");
-        
+        OnPathogenDefeated?.Invoke(pathogen);
         // Check victory condition
         if (activePathogens.Count == 0 && pathogenQueue.Count == 0)
         {
@@ -204,6 +204,58 @@ public class PathogenManager : MonoBehaviour
     public void ReshuffleQueue()
     {
         ShufflePathogenQueue();
+    }
+    
+    #endregion
+
+    #region Health Debug Methods
+    
+    [ContextMenu("Debug Current Pathogen Health")]
+    public void DebugCurrentPathogenHealth()
+    {
+        if (currentTargetedPathogen == null)
+        {
+            Debug.Log("No pathogen currently targeted");
+            return;
+        }
+        
+        var health = currentTargetedPathogen.GetHealth();
+        Debug.Log($"=== {currentTargetedPathogen.GetPathogenName()} Health Debug ===");
+        Debug.Log($"Current Health: {health.GetCurrentHealth()}");
+        Debug.Log($"Max Health: {health.GetMaxHealth()}");
+        Debug.Log($"Health Percentage: {health.GetHealthPercentage():P1}");
+        Debug.Log($"Is Alive: {currentTargetedPathogen.IsAlive()}");
+    }
+    
+    [ContextMenu("Debug All Active Pathogens Health")]
+    public void DebugAllPathogensHealth()
+    {
+        Debug.Log($"=== All Active Pathogens Health ({activePathogens.Count} total) ===");
+        
+        for (int i = 0; i < activePathogens.Count; i++)
+        {
+            var pathogen = activePathogens[i];
+            var health = pathogen.GetHealth();
+            
+            Debug.Log($"[{i}] {pathogen.GetPathogenName()}: " +
+                     $"{health.GetCurrentHealth()}/{health.GetMaxHealth()} HP " +
+                     $"({health.GetHealthPercentage():P1}) - " +
+                     $"Alive: {pathogen.IsAlive()}");
+        }
+    }
+    
+    /// <summary>
+    /// Get current pathogen health info for external debugging
+    /// </summary>
+    /// <returns>Health info string or null if no pathogen</returns>
+    public string GetCurrentPathogenHealthInfo()
+    {
+        if (currentTargetedPathogen == null) return "No targeted pathogen";
+        
+        var health = currentTargetedPathogen.GetHealth();
+        return $"{currentTargetedPathogen.GetPathogenName()}: " +
+               $"{health.GetCurrentHealth()}/{health.GetMaxHealth()} HP " +
+               $"({health.GetHealthPercentage():P1})";
     }
     
     #endregion

@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using System.Collections;
 
 public class PathogenHealthBarUI : MonoBehaviour
 {
@@ -14,15 +15,20 @@ public class PathogenHealthBarUI : MonoBehaviour
     
     private PathogenHealth currentPathogenHealth;
     private PathogenData currentPathogenData;
+    private PathogenManager pathogenManager;
     
-    private void Start()
+    private void Awake()
     {
-        // Subscribe to PathogenManager events
-        var pathogenManager = FindAnyObjectByType<PathogenManager>();
+        // Cache PathogenManager reference and subscribe to events
+        pathogenManager = FindAnyObjectByType<PathogenManager>();
         if (pathogenManager != null)
         {
             pathogenManager.OnPathogenSpawned += OnPathogenSpawned;
             pathogenManager.OnPathogenDefeated += OnPathogenDefeated;
+        }
+        else
+        {
+            Debug.LogWarning("PathogenHealthBarUI: PathogenManager not found!");
         }
         
         // Initially hide the UI
@@ -31,11 +37,10 @@ public class PathogenHealthBarUI : MonoBehaviour
     
     private void OnPathogenSpawned(Pathogen pathogen)
     {
-        // Unsubscribe from previous pathogen if any
-        UnsubscribeFromCurrentPathogen();
-
         currentPathogenHealth = pathogen.GetHealth();
         currentPathogenData = pathogen.GetData();
+        
+        Debug.Log($"PathogenHealthBarUI: Subscribing to health events for {pathogen.GetPathogenName()}");
         
         // Subscribe to health events
         currentPathogenHealth.OnHealthChanged += UpdateHealthBar;
@@ -46,15 +51,25 @@ public class PathogenHealthBarUI : MonoBehaviour
         UpdateHealthBar(currentPathogenHealth.GetCurrentHealth());
         
         // Show the UI
-        gameObject.SetActive(true);
     }
     
     private void OnPathogenDefeated(Pathogen pathogen)
     {
+        // Only process if this is the pathogen we're currently tracking
+        if (currentPathogenHealth != null && currentPathogenHealth == pathogen.GetHealth())
+        {
+            // Delay unsubscription to ensure all death event handlers complete
+            if (this != null && gameObject != null)
+            {
+                StartCoroutine(DelayedUnsubscribe());
+            }
+        }
+    }
+    
+    private System.Collections.IEnumerator DelayedUnsubscribe()
+    {
+        yield return new WaitForEndOfFrame();
         UnsubscribeFromCurrentPathogen();
-        
-        // Hide the UI
-        gameObject.SetActive(false);
     }
     
     private void UpdateHealthBar(int currentHealth)
@@ -76,7 +91,7 @@ public class PathogenHealthBarUI : MonoBehaviour
         // Update health text
         if (healthText != null)
         {
-            healthText.text = $"{currentHealth} + HP";
+            healthText.text = $"{currentHealth} HP";
         }
     }
     
@@ -120,6 +135,8 @@ public class PathogenHealthBarUI : MonoBehaviour
     {
         if (currentPathogenHealth != null)
         {
+            Debug.Log($"PathogenHealthBarUI: Unsubscribing from pathogen health events for {currentPathogenData?.PathogenName ?? "Unknown"}");
+            
             currentPathogenHealth.OnHealthChanged -= UpdateHealthBar;
             currentPathogenHealth.OnDamageTaken -= OnDamageTaken;
             currentPathogenHealth.OnPathogenDied -= OnPathogenDied;
@@ -131,6 +148,14 @@ public class PathogenHealthBarUI : MonoBehaviour
     
     private void OnDestroy()
     {
+        // Unsubscribe from PathogenManager events first
+        if (pathogenManager != null)
+        {
+            pathogenManager.OnPathogenSpawned -= OnPathogenSpawned;
+            pathogenManager.OnPathogenDefeated -= OnPathogenDefeated;
+        }
+        
+        // Then unsubscribe from current pathogen
         UnsubscribeFromCurrentPathogen();
     }
     
@@ -167,6 +192,51 @@ public class PathogenHealthBarUI : MonoBehaviour
                     Debug.LogWarning($"Health bar sprite at index {i} is null!");
                 }
             }
+        }
+    }
+    
+    #endregion
+    
+    #region Public API
+    
+    /// <summary>
+    /// Manually set the PathogenManager reference (alternative to auto-finding)
+    /// </summary>
+    /// <param name="manager">The PathogenManager to connect to</param>
+    public void SetPathogenManager(PathogenManager manager)
+    {
+        // Unsubscribe from old manager if any
+        if (pathogenManager != null)
+        {
+            pathogenManager.OnPathogenSpawned -= OnPathogenSpawned;
+            pathogenManager.OnPathogenDefeated -= OnPathogenDefeated;
+        }
+        
+        // Subscribe to new manager
+        pathogenManager = manager;
+        if (pathogenManager != null)
+        {
+            pathogenManager.OnPathogenSpawned += OnPathogenSpawned;
+            pathogenManager.OnPathogenDefeated += OnPathogenDefeated;
+        }
+    }
+    
+    #endregion
+    
+    #region Debug Methods
+    
+    [ContextMenu("Check Event Subscription Status")]
+    public void DebugEventSubscriptionStatus()
+    {
+        Debug.Log("=== PathogenHealthBarUI Event Subscription Status ===");
+        Debug.Log($"currentPathogenHealth: {(currentPathogenHealth != null ? "Connected" : "NULL")}");
+        Debug.Log($"currentPathogenData: {(currentPathogenData != null ? currentPathogenData.PathogenName : "NULL")}");
+        Debug.Log($"GameObject Active: {gameObject.activeInHierarchy}");
+        
+        if (currentPathogenHealth != null)
+        {
+            Debug.Log($"Pathogen Health: {currentPathogenHealth.GetCurrentHealth()}/{currentPathogenHealth.GetMaxHealth()}");
+            Debug.Log($"Pathogen Alive: {currentPathogenHealth.IsAlive()}");
         }
     }
     

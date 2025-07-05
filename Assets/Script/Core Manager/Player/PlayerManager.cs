@@ -20,21 +20,28 @@ public class PlayerManager : MonoBehaviour
     public event Action<CardSO> OnCardPlayed;
     public event Action<int> OnPlayerHealed;
     
+    [Header("Debug")]
+    [SerializeField] private bool enableDrawDebug = true;
+    private static int totalCardDraws = 0;
+    
+    void Awake()
+    {
+        // Create default player if none exists - no dependencies needed
+        if (player == null)
+        {
+            player = new Player(defaultPlayerHealth);
+            Debug.Log("PlayerManager: Created new player with 100 HP");
+        }
+    }
+    
     void Start()
     {
         // Find other managers
         deckManager = FindFirstObjectByType<DeckManager>();
         turnManager = FindFirstObjectByType<TurnManager>();
         
-        // Create default player if none exists
-        if (player == null)
-        {
-            player = new Player(defaultPlayerHealth);
-            Debug.Log("PlayerManager: Created new player with 100 HP");
-            
-            // Draw initial cards after a frame delay to ensure DeckManager is ready
-            StartCoroutine(DrawInitialCardsCoroutine());
-        }
+        // Draw initial cards after ensuring DeckManager is ready
+        StartCoroutine(DrawInitialCardsCoroutine());
     }
     
     private System.Collections.IEnumerator DrawInitialCardsCoroutine()
@@ -81,11 +88,9 @@ public class PlayerManager : MonoBehaviour
 
     #region Turn Management
     
-    public void StartTurn(int cardsToDraw = -1)
+    public void StartTurn(int cardsToDraw)
     {
         // Use TurnManager's setting if not specified
-        if (cardsToDraw == -1)
-            cardsToDraw = turnManager?.cardsPerTurn ?? 2;
             
         player.ResetTurnStats();
         DrawCards(cardsToDraw);
@@ -174,6 +179,19 @@ public class PlayerManager : MonoBehaviour
         }
         
         Debug.Log($"PlayerManager: Drew {cardsDrawn} cards");
+        
+        totalCardDraws += cardsDrawn;
+        if (enableDrawDebug)
+        {
+            Debug.Log($"PlayerManager: Total cards drawn this session: {totalCardDraws}");
+            
+            // Warning if too many draws
+            if (totalCardDraws > 20)
+            {
+                Debug.LogError($"PlayerManager: Excessive card draws detected! Total: {totalCardDraws}");
+            }
+        }
+        
         NotifyStatsChanged();
     }
 

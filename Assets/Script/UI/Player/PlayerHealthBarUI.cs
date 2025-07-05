@@ -20,37 +20,62 @@ public class PlayerHealthBarUI : MonoBehaviour
     [SerializeField] private Sprite[] healthBarSprites;
     [SerializeField] private bool reverseOrder = false;
     
-    [Header("Settings")]
-    [SerializeField] private float refreshRate = 0.1f;
-    
     private int lastHP = -1;
     private float lastRefreshTime = 0f;
     
     private void OnEnable()
     {
-        if (player != null)
-        {
-            player.PlayerHealth.OnHealthChanged += CheckForHealthChanges;
-        }
+        SubscribeToPlayerEvents();
     }
     
     private void OnDisable()
     {
-        if (player != null)
+        UnsubscribeFromPlayerEvents();
+    }
+    
+    private void SubscribeToPlayerEvents()
+    {
+        if (player != null && player.PlayerHealth != null)
+        {
+            player.PlayerHealth.OnHealthChanged += CheckForHealthChanges;
+            Debug.Log($"PlayerHealthBarUI: Subscribed to player health events");
+        }
+        else
+        {
+            Debug.LogWarning($"PlayerHealthBarUI: Cannot subscribe - player: {(player != null ? "OK" : "NULL")}, PlayerHealth: {(player?.PlayerHealth != null ? "OK" : "NULL")}");
+        }
+    }
+    
+    private void UnsubscribeFromPlayerEvents()
+    {
+        if (player != null && player.PlayerHealth != null)
         {
             player.PlayerHealth.OnHealthChanged -= CheckForHealthChanges;
+            Debug.Log($"PlayerHealthBarUI: Unsubscribed from player health events");
         }
     }
 
-    void Start()
+    void Awake()
     {
         if (player == null)
         {
+            Debug.Log("PlayerHealthBarUI: Player not assigned, searching for GameManager...");
             var gameManager = FindFirstObjectByType<GameManager>();
             if (gameManager != null)
             {
                 player = gameManager.GetPlayer();
+                Debug.Log($"PlayerHealthBarUI: Found player via GameManager: {(player != null ? "SUCCESS" : "FAILED")}");
             }
+            else
+            {
+                Debug.LogWarning("PlayerHealthBarUI: GameManager not found!");
+            }
+        }
+        
+        // Re-subscribe after finding player
+        if (player != null)
+        {
+            SubscribeToPlayerEvents();
         }
         
         UpdateHealthDisplay();
@@ -58,7 +83,13 @@ public class PlayerHealthBarUI : MonoBehaviour
     
     private void CheckForHealthChanges(int newHP, int maxHP)
     {
-        if (player == null) return;
+        if (player == null) 
+        {
+            Debug.LogWarning("PlayerHealthBarUI: CheckForHealthChanges called but player is null!");
+            return;
+        }
+        
+        Debug.Log($"PlayerHealthBarUI: Health changed - HP: {newHP}/{maxHP} (last: {lastHP})");
         
         if (newHP != lastHP)
         {
@@ -111,7 +142,15 @@ public class PlayerHealthBarUI : MonoBehaviour
     
     public void SetPlayer(Player newPlayer)
     {
+        // Unsubscribe from old player
+        UnsubscribeFromPlayerEvents();
+        
         player = newPlayer;
+        Debug.Log($"PlayerHealthBarUI: SetPlayer called - player: {(player != null ? "SET" : "NULL")}");
+        
+        // Subscribe to new player
+        SubscribeToPlayerEvents();
+        
         UpdateHealthDisplay();
     }
     
@@ -132,6 +171,48 @@ public class PlayerHealthBarUI : MonoBehaviour
             float testHealth = (float)i / (healthBarSprites.Length - 1);
             int spriteIndex = GetSpriteIndexFromHealth(testHealth);
             Debug.Log($"Health {testHealth:P0} → Sprite Index {spriteIndex}");
+        }
+    }
+    
+    [ContextMenu("Debug Player Health Status")]
+    private void DebugPlayerHealthStatus()
+    {
+        Debug.Log("=== Player Health Bar Debug ===");
+        Debug.Log($"Player: {(player != null ? "Connected" : "NULL")}");
+        
+        if (player != null)
+        {
+            Debug.Log($"Player HP: {player.HP}/{player.MaxHP}");
+            Debug.Log($"PlayerHealth: {(player.PlayerHealth != null ? "Connected" : "NULL")}");
+            
+            if (player.PlayerHealth != null)
+            {
+                Debug.Log($"Health Percentage: {player.PlayerHealth.HealthPercentage:P1}");
+                Debug.Log($"Is Alive: {player.PlayerHealth.IsAlive}");
+            }
+        }
+        
+        Debug.Log($"Health Bar Image: {(healthBarImage != null ? "Connected" : "NULL")}");
+        Debug.Log($"Health Text: {(healthText != null ? "Connected" : "NULL")}");
+        Debug.Log($"Health Bar Sprites: {(healthBarSprites != null ? healthBarSprites.Length.ToString() : "NULL")}");
+        
+        if (healthText != null)
+        {
+            Debug.Log($"Current Health Text: '{healthText.text}'");
+        }
+    }
+    
+    [ContextMenu("Test Damage Player")]
+    private void TestDamagePlayer()
+    {
+        if (player != null)
+        {
+            Debug.Log("Testing player damage...");
+            player.TakeDamage(10);
+        }
+        else
+        {
+            Debug.LogWarning("Cannot test damage - player is null!");
         }
     }
     

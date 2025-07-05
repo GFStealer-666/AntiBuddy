@@ -2,16 +2,11 @@ using UnityEngine;
 using System.Collections.Generic;
 
 [CreateAssetMenu(fileName = "Helper T Cell", menuName = "Card/Immune/HelperT")]
-public class HelperTCellCardSO : ImmuneCardSO
+public class HelperTCellCardSO : CardSO
 {
-    void Awake()
+    public override void ApplyEffect(Player player, List<CardSO> playedCards, Pathogen target)
     {
-        cardType = ImmuneCardType.Instant; // Helper T activates immediately
-    }
-
-    protected override void DoCardEffect(Player player, List<CardSO> playedCards, Pathogen target)
-    {
-        // Empty effect - Helper T-Cell just enables combos
-        // It does not have a direct effect on its own
+        // Helper T-Cell just enables other cards - no direct effect
+        Debug.Log("Helper T-Cell: Enabling combo cards");
     }
 }

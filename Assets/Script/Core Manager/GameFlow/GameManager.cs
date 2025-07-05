@@ -44,6 +44,7 @@ public class GameManager : MonoBehaviour
         // Subscribe to manager events
         if (pathogenManager != null)
         {
+            pathogenManager.OnPathogenDefeated += HandleReward;
             pathogenManager.OnAllPathogensDefeated += HandleGameWon;
         }
         
@@ -58,43 +59,6 @@ public class GameManager : MonoBehaviour
     }
     
     #endregion
-    
-    #region Turn Flow Control
-    
-    public void StartPlayerTurn()
-    {
-        Debug.Log("=== PLAYER TURN STARTED ===");
-        
-        // TurnManager handles its own turn flow
-        // Just notify other systems
-        OnPlayerTurnStart?.Invoke();
-    }
-    
-    public void EndPlayerTurn()
-    {
-        Debug.Log("=== PLAYER TURN ENDED ===");
-        
-        // TurnManager handles its own turn flow
-        OnPlayerTurnEnd?.Invoke();
-    }
-    
-    public void StartPathogenTurn()
-    {
-        Debug.Log("=== PATHOGEN TURN STARTED ===");
-        
-        // TurnManager handles its own turn flow
-        OnPathogenTurnStart?.Invoke();
-    }
-    
-    public void EndPathogenTurn()
-    {
-        Debug.Log("=== PATHOGEN TURN ENDED ===");
-        
-        OnPathogenTurnEnd?.Invoke();
-    }
-    
-    #endregion
-    
     #region Game State Management
     
     private void HandleGameOver()
@@ -110,16 +74,18 @@ public class GameManager : MonoBehaviour
         gameStateManager?.EndGame(true);
         OnGameWon?.Invoke();
     }
+    private void HandleReward(Pathogen defeatedPathogen)
+    {
+        // Handle rewards for defeating a pathogen
+        Debug.Log($"Player defeated {defeatedPathogen.GetPathogenName()} and earned rewards");
+        playerManager.GetPlayer().PlayerTokens.AddTokens(defeatedPathogen.GetTokenDropOnDeath());
+        // Notify other systems if needed   
+        // For example, update player stats, grant items, etc.
+    }
     
     #endregion
-    
+
     #region Public Interface
-    
-    public bool PlayCard(CardSO card, Pathogen target = null)
-    {
-        // Delegate to TurnManager which handles card limits and turn logic
-        return turnManager?.PlayCard(card, target) ?? false;
-    }
     
     // Getters for other systems
     public bool IsPlayerTurn() => turnManager?.IsPlayerTurn() ?? false;

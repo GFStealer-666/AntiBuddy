@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Natural Killer
   m_EditorClassIdentifier: 
   cardName: Natural Killer
-  cardIcon: {fileID: 0}
+  frontCardImage: {fileID: 21300000, guid: 3e5cd541a15526e4892ea4f1895a3f2d, type: 3}
+  backCardImage: {fileID: 21300000, guid: 192ea1d00d13c614ab6006200477db29, type: 3}
   description: 
-  power: 0
+  cardType: 0
+  hasActivatedThisTurn: 0

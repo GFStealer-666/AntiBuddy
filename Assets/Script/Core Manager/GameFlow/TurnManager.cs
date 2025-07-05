@@ -126,12 +126,15 @@ public class TurnManager : MonoBehaviour
         isProcessingTurn = true;
         currentPhase = TurnPhase.PlayerTurn;
         turnTimer = turnTimeLimit;
+         int cardsToDraw = (turnNumber == 1) ? 5 : cardsPlayedThisTurn;
         cardsPlayedThisTurn = 0; // Reset cards played counter
-        
         Debug.Log($"=== Player Turn {turnNumber} Started ===");
         Debug.Log($"Cards allowed this turn: {cardsPerTurn}");
         
-        playerManager.StartTurn(cardsPlayedThisTurn);
+        // Draw cards at start of turn (typically 1-2 cards per turn)
+        // Draw 5 cards on first turn, 1 on subsequent turns
+        playerManager.StartTurn(cardsToDraw);
+        
         OnTurnPhaseChanged?.Invoke(currentPhase);
         OnPlayerStatsChanged?.Invoke(playerManager.GetPlayerStats());
         
@@ -140,7 +143,11 @@ public class TurnManager : MonoBehaviour
 
     public void EndPlayerTurn()
     {
-        if (isProcessingTurn || currentPhase != TurnPhase.PlayerTurn) return;
+        if (isProcessingTurn || currentPhase != TurnPhase.PlayerTurn) 
+        {
+            Debug.LogWarning($"TurnManager: Cannot end player turn - isProcessingTurn: {isProcessingTurn}, currentPhase: {currentPhase}");
+            return;
+        }
         
         isProcessingTurn = true;
         Debug.Log("=== Player Turn Ended ===");
@@ -156,20 +163,31 @@ public class TurnManager : MonoBehaviour
         
         if (currentPhase != TurnPhase.GameOver)
         {
+            isProcessingTurn = false;
+            Debug.Log("TurnManager: Starting pathogen turn...");
             StartPathogenTurn();
         }
-        
-        isProcessingTurn = false;
+        else
+        {
+            Debug.Log("TurnManager: Game is over, not starting pathogen turn");
+        }
     }
 
     public void StartPathogenTurn()
     {
-        if (isProcessingTurn) return;
+        if (isProcessingTurn) 
+        {
+            Debug.LogWarning("TurnManager: Already processing a turn, cannot start pathogen turn");
+            return;
+        }
         
         isProcessingTurn = true;
         currentPhase = TurnPhase.PathogenTurn;
         
         Debug.Log("=== Pathogen Turn Started ===");
+        Debug.Log($"Turn Number: {turnNumber}");
+        Debug.Log($"Active Pathogens: {pathogenManager?.GetActivePathogenCount() ?? 0}");
+        
         OnTurnPhaseChanged?.Invoke(currentPhase);
         
         // Execute pathogen actions
@@ -180,11 +198,35 @@ public class TurnManager : MonoBehaviour
 
     void ExecutePathogenTurn()
     {
-        // Pathogen attacks player
-        if (pathogenManager != null)
+        if (pathogenManager == null || playerManager == null)
         {
-            pathogenManager.GetCurrentPathogen().AttackPlayer(playerManager.GetPlayer());
+            Debug.LogError("TurnManager: Missing PathogenManager or PlayerManager!");
+            EndPathogenTurn();
+            return;
+        }
+        
+        // Check if there are any active pathogens
+        if (!pathogenManager.HasActivePathogens())
+        {
+            Debug.Log("TurnManager: No active pathogens, checking if we should spawn next or end game");
+            EndPathogenTurn();
+            return;
+        }
+        
+        // Get the played cards from this turn to pass to pathogen abilities
+        var playedCards = playerManager.GetPlayedCards();
+        
+        // Execute pathogen turn with proper error handling
+        try
+        {
+            pathogenManager.ExecutePathogenTurn(playerManager.GetPlayer(), playedCards);
             OnPlayerStatsChanged?.Invoke(playerManager.GetPlayerStats());
+            
+            Debug.Log("TurnManager: Pathogen turn executed successfully");
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"TurnManager: Error during pathogen turn execution: {e.Message}");
         }
         
         // Check if player is defeated
@@ -193,7 +235,8 @@ public class TurnManager : MonoBehaviour
             EndGame(false); // Player loses
             return;
         }
-        
+
+        isProcessingTurn = false;
         // End pathogen turn and start next player turn
         EndPathogenTurn();
     }
@@ -328,6 +371,53 @@ public class TurnManager : MonoBehaviour
         
         Debug.Log(playerWon ? "Player Wins!" : "Player Loses!");
     }
+
+    #region Debug Methods
+    
+    [ContextMenu("Force Start Pathogen Turn")]
+    public void ForceStartPathogenTurn()
+    {
+        Debug.Log("=== FORCE STARTING PATHOGEN TURN ===");
+        if (currentPhase == TurnPhase.PathogenTurn)
+        {
+            Debug.Log("Already in pathogen turn phase");
+            return;
+        }
+        
+        StartPathogenTurn();
+    }
+    
+    [ContextMenu("Debug Turn State")]
+    public void DebugTurnState()
+    {
+        Debug.Log("=== Turn Manager State ===");
+        Debug.Log($"Current Phase: {currentPhase}");
+        Debug.Log($"Turn Number: {turnNumber}");
+        Debug.Log($"Is Processing Turn: {isProcessingTurn}");
+        Debug.Log($"Cards Played This Turn: {cardsPlayedThisTurn}/{cardsPerTurn}");
+        Debug.Log($"Turn Timer: {turnTimer:F1}s");
+        
+        if (pathogenManager != null)
+        {
+            Debug.Log($"Active Pathogens: {pathogenManager.GetActivePathogenCount()}");
+            Debug.Log($"Has Active Pathogens: {pathogenManager.HasActivePathogens()}");
+        }
+        else
+        {
+            Debug.Log("PathogenManager is NULL!");
+        }
+        
+        if (playerManager != null)
+        {
+            Debug.Log($"Player HP: {playerManager.GetPlayer()?.HP ?? -1}");
+        }
+        else
+        {
+            Debug.Log("PlayerManager is NULL!");
+        }
+    }
+    
+    #endregion
 
     // Public getters for UI and other systems
     public TurnPhase GetCurrentPhase() => currentPhase;

@@ -6,27 +6,58 @@ public class PathogenUI : MonoBehaviour
 {
     [Header("UI References")]
     [SerializeField] private Image pathogenImage;
-    private Pathogen currentPathogen;
     
-    private void Start()
+    private Pathogen currentPathogen;
+    private PathogenManager pathogenManager;
+
+    private void OnEnable()
     {
-        // Subscribe to PathogenManager events
-        FindAnyObjectByType<PathogenManager>().OnPathogenSpawned += DisplayPathogen;
-        FindAnyObjectByType<PathogenManager>().OnPathogenDefeated += ClearDisplay;
+        // Cache the PathogenManager reference and add null check
+        pathogenManager = FindAnyObjectByType<PathogenManager>();
+        if (pathogenManager != null)
+        {
+            pathogenManager.OnPathogenSpawned += DisplayPathogen;
+            pathogenManager.OnPathogenDefeated += ClearDisplay;
+        }
+        else
+        {
+            Debug.LogWarning("PathogenUI: PathogenManager not found!");
+        }
+    }
+    
+    private void OnDisable()
+    {
+        // Use cached reference and add null check
+        if (pathogenManager != null)
+        {
+            pathogenManager.OnPathogenSpawned -= DisplayPathogen;
+            pathogenManager.OnPathogenDefeated -= ClearDisplay;
+        }
     }
     
     public void DisplayPathogen(Pathogen pathogen)
     {
         currentPathogen = pathogen;
-        // Update UI
-        pathogenImage.sprite = pathogen.GetSprite();
+        Debug.Log($"Displaying pathogen: {pathogen.GetPathogenName()}");
+        
+        if (pathogenImage != null)
+        {
+            pathogenImage.sprite = pathogen.GetSprite();
+        }
+        else
+        {
+            Debug.LogWarning("PathogenUI: pathogenImage is null!");
+        }
     }
-    
-
     
     private void ClearDisplay(Pathogen pathogen)
     {
         // Clear UI when pathogen dies
-        pathogenImage.sprite = null;
+        if (pathogenImage != null)
+        {
+            pathogenImage.sprite = null;
+        }
+        
+        currentPathogen = null;
     }
 }

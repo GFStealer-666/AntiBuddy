@@ -10,6 +10,8 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
     [SerializeField] private CardActionPanel actionPanel;
     [SerializeField] private PlayerManager playerManager;
     [SerializeField] private PathogenManager pathogenManager;
+    [SerializeField] private TurnManager turnManager;
+    
     
     [Header("Settings")]
     [SerializeField] private float refreshRate = 0.1f;
@@ -46,6 +48,12 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
     
     private void InitializeComponents()
     {
+        // Find turn manager if not assigned
+        if (turnManager == null)
+        {
+            turnManager = FindFirstObjectByType<TurnManager>();
+        }
+        
         // Find pathogen manager if not assigned
         if (pathogenManager == null)
         {
@@ -138,7 +146,7 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
 
         if (cardUI != null)
         {
-            cardUI.Initialize(item);
+            // cardUI.Initialize(item);
             cardUI.OnCardClicked += OnCardClicked;
             currentCardObjects.Add(cardObject);
         }
@@ -248,27 +256,19 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
     
     public void PlayCard(CardSO card)
     {
-        if (player == null) return;
-        
-        // Double-check that card isn't blocked
-        if (pathogenManager != null)
+        // Delegate to TurnManager which handles all turn logic, card limits, and validation
+        if (turnManager != null)
         {
-            var activePathogens = pathogenManager.GetActivePathogens();
-            if (IsCardBlockedByAnyPathogen(card, activePathogens))
+            bool success = turnManager.PlayCard(card, pathogenManager?.GetCurrentPathogen());
+            if (success)
             {
-                Debug.Log($"Cannot play {card.cardName} - it's blocked!");
-                return;
+                // Update blocking after playing a card (in case it affects blocking)
+                UpdateCardBlocking();
             }
-        }
-        
-        bool success = player.PlayCard(card);
-        if (success)
+        } 
+        else
         {
-            Debug.Log($"Played card: {card.cardName}");
-
-            playerManager.ApplyCardEffect(card , pathogenManager.GetCurrentPathogen());
-            // Update blocking after playing a card (in case it affects blocking)
-            UpdateCardBlocking();
+            Debug.LogError("PlayerHandUI: Cannot find TurnManager to play card!");
         }
     }
     

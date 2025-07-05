@@ -217,6 +217,18 @@ public class DeckManager : MonoBehaviour
     // Draw a single card from the deck
     public CardSO DrawCard()
     {
+        return DrawCardInternal(0); // Start with recursion depth of 0
+    }
+    
+    private CardSO DrawCardInternal(int recursionDepth)
+    {
+        // Prevent infinite recursion
+        if (recursionDepth > 10)
+        {
+            Debug.LogError("DrawCard: Too many recursive calls! Deck may be corrupted with null entries.");
+            return null;
+        }
+        
         // Ensure deck is initialized before drawing
         if (deck == null || deck.Count == 0)
         {
@@ -244,10 +256,10 @@ public class DeckManager : MonoBehaviour
             Debug.LogError($"Drew null card at index {index}! This indicates deck corruption. Removing null entry.");
             deck.RemoveAt(index);
             
-            // Try to draw again if there are still cards
+            // Try to draw again if there are still cards (with recursion limit)
             if (deck.Count > 0)
             {
-                return DrawCard();
+                return DrawCardInternal(recursionDepth + 1);
             }
             else
             {

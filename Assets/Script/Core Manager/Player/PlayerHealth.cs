@@ -18,30 +18,35 @@ public class PlayerHealth
     public void TakeDamage(int damage)
     {
         int actualDamage = Mathf.Max(0, damage);
+        int oldHP = HP;
         HP -= actualDamage;
         if (HP < 0) HP = 0;
+        
+        Debug.Log($"PlayerHealth: Took {actualDamage} damage. HP: {oldHP} -> {HP}/{MaxHP}");
         
         OnHealthChanged?.Invoke(HP, MaxHP);
         if (HP <= 0)
         {
+            Debug.Log("PlayerHealth: Player died!");
             OnPlayerDied?.Invoke();
         }
-        
-        Console.WriteLine($"Player took {actualDamage} damage. Current HP: {HP}");
     }
 
     public void Heal(int amount)
     {
+        int oldHP = HP;
         HP = Mathf.Min(MaxHP, HP + amount);
+        int actualHealing = HP - oldHP;
+        
+        Debug.Log($"PlayerHealth: Healed {actualHealing} HP. HP: {oldHP} -> {HP}/{MaxHP}");
         OnHealthChanged?.Invoke(HP, MaxHP);
-        Console.WriteLine($"Player healed {amount} HP. Current HP: {HP}");
     }
 
     public void IncreaseMaxHP(int amount)
     {
         MaxHP += amount;
+        Debug.Log($"PlayerHealth: Max HP increased by {amount}. New Max HP: {MaxHP}");
         OnHealthChanged?.Invoke(HP, MaxHP);
-        Console.WriteLine($"Max HP increased by {amount}. New Max HP: {MaxHP}");
     }
 
     public bool IsAlive => HP > 0;

@@ -24,7 +24,8 @@ public class Player
         int actualDamage = PlayerDefense.CalculateActualDamage(damage);
         PlayerHealth.TakeDamage(actualDamage);
         
-        Console.WriteLine($"Player took {actualDamage} damage (original: {damage}, blocked: {damage - actualDamage})");
+        Debug.Log($"Player took {actualDamage} damage (original: {damage}, blocked: {damage - actualDamage})");
+        Debug.Log($"Player HP: {PlayerHealth.HP}/{PlayerHealth.MaxHP}");
     }
 
     public bool PlayCard(CardSO card, Pathogen target = null)

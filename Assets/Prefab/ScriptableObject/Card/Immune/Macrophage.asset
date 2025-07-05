@@ -13,7 +13,9 @@ MonoBehaviour:
   m_Name: Macrophage
   m_EditorClassIdentifier: 
   cardName: Macrophage
-  cardIcon: {fileID: 0}
+  frontCardImage: {fileID: 21300000, guid: 2657ebbe4f4d4974cbf78c8aee7ff3f5, type: 3}
+  backCardImage: {fileID: 21300000, guid: a8b2a90986d164a46a3ab02d92aae3ff, type: 3}
   description: 
-  power: 0
+  cardType: 0
+  hasActivatedThisTurn: 0
   helperTCellReward: {fileID: 11400000, guid: 5260e5b9fb6c0694cbbcc0afd2f1b975, type: 2}

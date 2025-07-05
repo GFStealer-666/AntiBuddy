@@ -13,6 +13,8 @@ MonoBehaviour:
   m_Name: Cytotoxic Cell
   m_EditorClassIdentifier: 
   cardName: Cytotoxic Cell
-  cardIcon: {fileID: 0}
+  frontCardImage: {fileID: 21300000, guid: 5c3104d5ce76a534bb7f28a6bf1f63de, type: 3}
+  backCardImage: {fileID: 21300000, guid: 2649594c16acab945a7f7a719a5072b8, type: 3}
   description: 
-  power: 0
+  cardType: 1
+  hasActivatedThisTurn: 0
