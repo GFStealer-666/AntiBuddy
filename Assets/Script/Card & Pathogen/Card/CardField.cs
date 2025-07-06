@@ -1,130 +1,87 @@
 using UnityEngine;
 using System.Collections.Generic;
 
-[System.Serializable]
-public class CardFieldSlot
-{
-    public CardSO card;
-    public bool isOccupied;
-    public int slotIndex;
-
-    public CardFieldSlot(int index)
-    {
-        slotIndex = index;
-        isOccupied = false;
-        card = null;
-    }
-
-    public bool TryPlaceCard(CardSO cardToPlace)
-    {
-        if (!isOccupied && cardToPlace != null)
-        {
-            card = cardToPlace;
-            isOccupied = true;
-            return true;
-        }
-        return false;
-    }
-
-    public CardSO RemoveCard()
-    {
-        CardSO removedCard = card;
-        card = null;
-        isOccupied = false;
-        return removedCard;
-    }
-
-    public void ClearSlot()
-    {
-        card = null;
-        isOccupied = false;
-    }
-}
-
 public class CardField : MonoBehaviour
 {
     [Header("Field Configuration")]
-    public int maxFieldSlots = 2;
+    public int maxFieldCards = 2;
     
-    private List<CardFieldSlot> fieldSlots;
-    private List<CardSO> activeCards; // Cards currently in field that provide ongoing effects
+    [SerializeField] private List<CardSO> cardsInField = new List<CardSO>();
 
     public static System.Action<List<CardSO>> OnFieldChanged;
 
     void Awake()
     {
-        InitializeField();
-    }
-
-    void InitializeField()
-    {
-        fieldSlots = new List<CardFieldSlot>();
-        activeCards = new List<CardSO>();
-        
-        for (int i = 0; i < maxFieldSlots; i++)
-        {
-            fieldSlots.Add(new CardFieldSlot(i));
-        }
+        cardsInField = new List<CardSO>();
     }
 
     public bool TryPlayCardToField(CardSO card)
     {
-        // Find the first available slot
-        for (int i = 0; i < fieldSlots.Count; i++)
+        if (card == null)
         {
-            if (fieldSlots[i].TryPlaceCard(card))
-            {
-                activeCards.Add(card);
-                OnFieldChanged?.Invoke(new List<CardSO>(activeCards));
-                Debug.Log($"Placed {card.cardName} in field slot {i}");
-                return true;
-            }
+            Debug.LogWarning("Cannot add null card to field");
+            return false;
         }
         
-        Debug.LogWarning("No available field slots!");
+        if (cardsInField.Count >= maxFieldCards)
+        {
+            Debug.LogWarning($"Field is full! Max cards: {maxFieldCards}");
+            return false;
+        }
+        
+        cardsInField.Add(card);
+        OnFieldChanged?.Invoke(new List<CardSO>(cardsInField)); // Always pass a copy
+        Debug.Log($"Added {card.cardName} to field ({cardsInField.Count}/{maxFieldCards})");
+        return true;
+    }
+
+    public bool RemoveCardFromField(CardSO card)
+    {
+        if (cardsInField.Remove(card))
+        {
+            OnFieldChanged?.Invoke(new List<CardSO>(cardsInField));
+            Debug.Log($"Removed {card.cardName} from field ({cardsInField.Count}/{maxFieldCards})");
+            return true;
+        }
         return false;
     }
 
     public void ClearField()
     {
-        foreach (var slot in fieldSlots)
-        {
-            slot.ClearSlot();
-        }
-        activeCards.Clear();
-        OnFieldChanged?.Invoke(new List<CardSO>(activeCards));
+        cardsInField.Clear();
+        OnFieldChanged?.Invoke(new List<CardSO>(cardsInField));
         Debug.Log("Field cleared");
     }
 
-    public List<CardSO> GetActiveCards()
+    public List<CardSO> GetCardsInField()
     {
-        return new List<CardSO>(activeCards);
-    }
-
-    public List<CardFieldSlot> GetFieldSlots()
-    {
-        return new List<CardFieldSlot>(fieldSlots);
+        return new List<CardSO>(cardsInField);
     }
 
     public bool IsFieldFull()
     {
-        return activeCards.Count >= maxFieldSlots;
+        return cardsInField.Count >= maxFieldCards;
     }
 
     public int GetAvailableSlots()
     {
-        return maxFieldSlots - activeCards.Count;
+        return maxFieldCards - cardsInField.Count;
+    }
+
+    public int GetCardCount()
+    {
+        return cardsInField.Count;
     }
 
     // Check for specific card types in field - uses CardEffects utility
     public bool HasCardTypeInField<T>() where T : CardSO
     {
-        return CardEffects.HasCardType<T>(activeCards);
+        return CardEffects.HasCardType<T>(cardsInField);
     }
 
     public int CountCardTypeInField<T>() where T : CardSO
     {
-        return CardEffects.CountCardType<T>(activeCards);
+        return CardEffects.CountCardType<T>(cardsInField);
     }
 
     // Utility method to check multiple card types at once
@@ -155,6 +112,32 @@ public class CardField : MonoBehaviour
                             CountCardTypeInField<HelperTCellCardSO>() +
                             CountCardTypeInField<NaturalKillerCardSO>();
 
-
+        // Add field effects logic here if needed
     }
+
+    #region Debug Methods
+    
+    [ContextMenu("Debug Field Status")]
+    public void DebugFieldStatus()
+    {
+        Debug.Log($"=== Card Field Status ===");
+        Debug.Log($"Cards in field: {cardsInField.Count}/{maxFieldCards}");
+        Debug.Log($"Available slots: {GetAvailableSlots()}");
+        Debug.Log($"Field full: {IsFieldFull()}");
+        
+        if (cardsInField.Count > 0)
+        {
+            Debug.Log("Cards currently in field:");
+            for (int i = 0; i < cardsInField.Count; i++)
+            {
+                Debug.Log($"  [{i}] {cardsInField[i].cardName}");
+            }
+        }
+        else
+        {
+            Debug.Log("Field is empty");
+        }
+    }
+    
+    #endregion
 }

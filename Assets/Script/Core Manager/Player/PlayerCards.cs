@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System;
+using UnityEngine;
 
 
 
@@ -35,7 +36,21 @@ public class PlayerCards
         {
             Hand.Remove(card);
             PlayedCards.Add(card);
+            
+            // Check if vaccine boost is active (double effect)
+            bool hasVaccineBoost = player.HasVaccineBoost;
+            
+            // Apply card effect
             card.ApplyEffect(player, PlayedCards, target);
+            
+            // If vaccine boost was active, apply effect again
+            if (hasVaccineBoost && !(card is ItemSO))
+            {
+                Debug.Log($"Vaccine Boost: Doubling effect of {card.cardName}!");
+                card.ApplyEffect(player, PlayedCards, target);
+                player.ConsumeVaccineBoost(); // Remove boost after use
+            }
+            
             OnCardPlayed?.Invoke(card);
             Console.WriteLine($"Played {card.cardName}");
             return true;

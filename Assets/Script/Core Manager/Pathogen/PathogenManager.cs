@@ -115,7 +115,10 @@ public class PathogenManager : MonoBehaviour
     {
         Debug.Log("PathogenManager: Executing pathogen turn");
         
-        foreach (var pathogen in activePathogens.ToList())
+        // Get initial list of pathogens (use ToList() to avoid modification during iteration)
+        var pathogensToProcess = activePathogens.ToList();
+        
+        foreach (var pathogen in pathogensToProcess)
         {
             if (pathogen.IsAlive())
             {
@@ -126,6 +129,20 @@ public class PathogenManager : MonoBehaviour
                 pathogen.AttackPlayer(player);
                 
                 Debug.Log($"PathogenManager: {pathogen.GetPathogenName()} completed turn actions");
+            }
+        }
+        
+        // If a pathogen died and a new one was spawned during this turn, let the new one act too
+        var newPathogens = activePathogens.Where(p => !pathogensToProcess.Contains(p) && p.IsAlive()).ToList();
+        if (newPathogens.Count > 0)
+        {
+            Debug.Log($"PathogenManager: New pathogen(s) spawned during turn, letting them act immediately");
+            foreach (var newPathogen in newPathogens)
+            {
+                // New pathogens get to act immediately on their spawn turn
+                newPathogen.ProcessTurnStart(playedCards);
+                newPathogen.AttackPlayer(player);
+                Debug.Log($"PathogenManager: New pathogen {newPathogen.GetPathogenName()} completed immediate turn actions");
             }
         }
     }
@@ -142,17 +159,22 @@ public class PathogenManager : MonoBehaviour
         {
             currentTargetedPathogen = null;
         }
+        
         Debug.Log($"Pathogen destroyed: {pathogen.GetPathogenName()}");
         OnPathogenDefeated?.Invoke(pathogen);
-        // Check victory condition
+        
+        // Check victory condition first
         if (activePathogens.Count == 0 && pathogenQueue.Count == 0)
         {
             OnAllPathogensDefeated?.Invoke();
+            return;
         }
-        else if (activePathogens.Count == 0)
+        
+        // If no active pathogens but more in queue, spawn next immediately
+        if (activePathogens.Count == 0 && pathogenQueue.Count > 0)
         {
-            // Spawn next pathogen after delay
-            Invoke(nameof(SpawnNextPathogen), 2f);
+            Debug.Log("PathogenManager: Spawning next pathogen immediately to continue turn");
+            SpawnNextPathogen();
         }
     }
     
@@ -204,6 +226,24 @@ public class PathogenManager : MonoBehaviour
     public void ReshuffleQueue()
     {
         ShufflePathogenQueue();
+    }
+    
+    [ContextMenu("Debug Pathogen Turn Flow")]
+    public void DebugPathogenTurnFlow()
+    {
+        Debug.Log("=== Pathogen Turn Flow Debug ===");
+        Debug.Log($"Active Pathogens: {GetActivePathogenCount()}");
+        Debug.Log($"Pathogens in Queue: {pathogenQueue.Count}");
+        Debug.Log($"Current Targeted: {(currentTargetedPathogen?.GetPathogenName() ?? "None")}");
+        
+        if (activePathogens.Count > 0)
+        {
+            for (int i = 0; i < activePathogens.Count; i++)
+            {
+                var pathogen = activePathogens[i];
+                Debug.Log($"  [{i}] {pathogen.GetPathogenName()} - HP: {pathogen.GetCurrentHealth()}/{pathogen.GetMaxHealth()} - Alive: {pathogen.IsAlive()}");
+            }
+        }
     }
     
     #endregion

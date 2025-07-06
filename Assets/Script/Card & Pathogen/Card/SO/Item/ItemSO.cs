@@ -1,109 +1,93 @@
 using UnityEngine;
 using System;
+using System.Collections.Generic;
 
 [CreateAssetMenu(fileName = "New Item Card", menuName = "Cards/Item Card")]
-public class ItemSO : ScriptableObject
+public class ItemSO : CardSO  // Inherit from CardSO instead of ScriptableObject
 {
-    [Header("Basic Info")]
-    public string itemName;
-    public string description;
-    public Sprite itemImage;
-    public int cost;
+    /// <summary>
+    /// Items work exactly like cards now - they inherit from CardSO
+    /// Effects are applied immediately when played, but some effects (like defense boosts)
+    /// naturally last until the next player turn starts due to game mechanics.
+    /// 
+    /// Benefits of this simplified system:
+    /// - Items appear in hand exactly like cards
+    /// - Can be played using the same card system  
+    /// - No complex cost management needed
+    /// - Effects are clear and immediate
+    /// </summary>
 
-    [Header("Cost Settings")]
-    public CostType costType = CostType.Tokens;
-    public int hpCost;
-
-    [Header("Item Properties")]
+    [Header("Item-Specific Properties")]
     public ItemType itemType;
     public bool isConsumable = true;
     public int maxStack = 1;
 
-    [Header("Effects")]
+    [Header("Item Effects (Active until next player turn)")]
     public int healthBoost;
     public int defenseBoost;
     public int percentageDefenseBoost;
     public int tokenGeneration;
-    public bool grantsPermanentEffect;
 
-    public virtual void UseItem(Player player)
+    [Header("Item Cost")]
+    public ItemCostType costType = ItemCostType.Tokens;
+    public int tokenCost = 5;
+    public int hpCost = 5;
+    
+    [Header("Random Cost Settings")]
+    public bool useRandomCost = false;
+    public int minRandomTokenCost = 2;
+    public int maxRandomTokenCost = 6;
+    public int minRandomHpCost = 1;
+    public int maxRandomHpCost = 3;
+
+    // Override the card effect method from CardSO
+    public override void ApplyEffect(Player player, List<CardSO> playedCards, Pathogen target)
     {
-        // Pay the cost first
-        if (!PayCost(player))
-        {
-            Debug.LogWarning($"Cannot use {itemName} - insufficient resources");
-            return;
-        }
-
+        // Apply immediate effects
         switch (itemType)
         {
             case ItemType.Healing:
-                player.PlayerHealth.Heal(healthBoost);
+                if (healthBoost > 0)
+                    CardEffects.HealPlayer(player, healthBoost);
                 break;
+                
             case ItemType.Defense:
-                player.PlayerDefense.AddDefense(defenseBoost);
+                if (defenseBoost > 0)
+                    CardEffects.AddDefense(player, defenseBoost);
                 if (percentageDefenseBoost > 0)
-                    player.PlayerDefense.AddPercentageDefense(percentageDefenseBoost);
+                    CardEffects.AddPercentageDefense(player, percentageDefenseBoost);
                 break;
+                
             case ItemType.TokenGenerator:
-                player.PlayerTokens.AddTokens(tokenGeneration);
+                if (tokenGeneration > 0)
+                    CardEffects.AddTokens(player, tokenGeneration);
                 break;
+                
             case ItemType.Utility:
                 ApplyUtilityEffect(player);
                 break;
         }
 
-        Console.WriteLine($"Used item: {itemName}");
+        Debug.Log($"Used item: {cardName} - Effect lasts until next player turn");
     }
 
-    private bool PayCost(Player player)
+    /// <summary>
+    /// Randomize costs if useRandomCost is enabled
+    /// </summary>
+    public virtual void RandomizeCosts()
     {
-        switch (costType)
-        {
-            case CostType.Tokens:
-                if (player.Tokens >= cost)
-                {
-                    player.PlayerTokens.SpendTokens(cost);
-                    return true;
-                }
-                break;
-            case CostType.Health:
-                if (player.HP > hpCost) // Ensure player doesn't die from using item
-                {
-                    player.PlayerHealth.TakeDamage(hpCost);
-                    return true;
-                }
-                break;
-            case CostType.Both:
-                if (player.Tokens >= cost && player.HP > hpCost)
-                {
-                    player.PlayerTokens.SpendTokens(cost);
-                    player.PlayerHealth.TakeDamage(hpCost);
-                    return true;
-                }
-                break;
-        }
-        return false;
+        if (!useRandomCost) return;
+        
+        tokenCost = UnityEngine.Random.Range(minRandomTokenCost, maxRandomTokenCost + 1);
+        hpCost = UnityEngine.Random.Range(minRandomHpCost, maxRandomHpCost + 1);
+        
+        Debug.Log($"Randomized costs for {cardName}: {tokenCost} tokens, {hpCost} HP");
     }
 
     protected virtual void ApplyUtilityEffect(Player player)
     {
         // Override in derived classes for custom utility effects
-    }
-
-    public virtual bool CanUse(Player player)
-    {
-        switch (costType)
-        {
-            case CostType.Tokens:
-                return player.Tokens >= cost;
-            case CostType.Health:
-                return player.HP > hpCost; // Must have more HP than cost to survive
-            case CostType.Both:
-                return player.Tokens >= cost && player.HP > hpCost;
-            default:
-                return true;
-        }
+        // For example: immunostimulant, vaccine, etc.
     }
 }
 
@@ -115,9 +99,9 @@ public enum ItemType
     Utility
 }
 
-public enum CostType
+public enum ItemCostType
 {
     Tokens,
     Health,
-    Both
+    Either // Player can choose tokens OR health
 }

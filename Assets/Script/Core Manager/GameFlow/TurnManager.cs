@@ -23,6 +23,11 @@ public class TurnManager : MonoBehaviour
     public float turnTimeLimit = 60f; // seconds per turn
     public int cardsPerTurn = 2; // Maximum cards player can play per turn
     
+    [Header("Turn Transition Delays")]
+    public float endPlayerTurnDelay = 1.5f; // Delay before starting pathogen turn
+    public float pathogenTurnDelay = 2f; // Delay during pathogen actions
+    public float startPlayerTurnDelay = 1f; // Delay before starting next player turn
+    
     private TurnPhase currentPhase;
     private int turnNumber;
     private float turnTimer;
@@ -126,14 +131,29 @@ public class TurnManager : MonoBehaviour
         isProcessingTurn = true;
         currentPhase = TurnPhase.PlayerTurn;
         turnTimer = turnTimeLimit;
-         int cardsToDraw = (turnNumber == 1) ? 5 : cardsPlayedThisTurn;
+        
+        // Draw cards: 5 on first turn, then equal to cards played last turn
+        int cardsToDraw = (turnNumber == 1) ? 5 : cardsPlayedThisTurn;
+        playerManager.StartTurn(cardsToDraw);
         cardsPlayedThisTurn = 0; // Reset cards played counter
+        
+        // Clear the card field now - before new turn starts
+        if (cardField != null)
+        {
+            Debug.Log("TurnManager: Clearing field for new turn");
+            cardField.ClearField();
+        }
+        
+        // Reset temporary effects that last only until next turn
+        if (playerManager != null)
+        {
+            playerManager.GetPlayer().ResetTemporaryEffects();
+            Debug.Log("TurnManager: Reset temporary effects for new turn");
+        }
+        
         Debug.Log($"=== Player Turn {turnNumber} Started ===");
         Debug.Log($"Cards allowed this turn: {cardsPerTurn}");
-        
-        // Draw cards at start of turn (typically 1-2 cards per turn)
-        // Draw 5 cards on first turn, 1 on subsequent turns
-        playerManager.StartTurn(cardsToDraw);
+        Debug.Log($"Cards to draw: {cardsToDraw} (Turn {turnNumber}: {(turnNumber == 1 ? "starting hand" : "based on last turn's plays")})");
         
         OnTurnPhaseChanged?.Invoke(currentPhase);
         OnPlayerStatsChanged?.Invoke(playerManager.GetPlayerStats());
@@ -152,25 +172,30 @@ public class TurnManager : MonoBehaviour
         isProcessingTurn = true;
         Debug.Log("=== Player Turn Ended ===");
         Debug.Log($"Cards played this turn: {cardsPlayedThisTurn}");
+        Debug.Log("Cards remain in field for pathogen turn...");
         
-        // Clear the card field after effects are processed
-        if (cardField != null)
-        {
-            cardField.ClearField();
-        }
+        // DON'T clear the field here - keep cards visible during pathogen turn
+        // Player can see what they played while pathogen responds
         
         CheckWinConditions();
         
         if (currentPhase != TurnPhase.GameOver)
         {
-            isProcessingTurn = false;
-            Debug.Log("TurnManager: Starting pathogen turn...");
-            StartPathogenTurn();
+            Debug.Log($"TurnManager: Starting pathogen turn in {endPlayerTurnDelay} seconds...");
+            // Add delay before pathogen turn starts
+            Invoke(nameof(DelayedStartPathogenTurn), endPlayerTurnDelay);
         }
         else
         {
             Debug.Log("TurnManager: Game is over, not starting pathogen turn");
+            isProcessingTurn = false;
         }
+    }
+    
+    private void DelayedStartPathogenTurn()
+    {
+        isProcessingTurn = false;
+        StartPathogenTurn();
     }
 
     public void StartPathogenTurn()
@@ -205,10 +230,10 @@ public class TurnManager : MonoBehaviour
             return;
         }
         
-        // Check if there are any active pathogens
+        // Check if there are any active pathogens at start
         if (!pathogenManager.HasActivePathogens())
         {
-            Debug.Log("TurnManager: No active pathogens, checking if we should spawn next or end game");
+            Debug.Log("TurnManager: No active pathogens at start of turn, ending pathogen turn");
             EndPathogenTurn();
             return;
         }
@@ -216,18 +241,35 @@ public class TurnManager : MonoBehaviour
         // Get the played cards from this turn to pass to pathogen abilities
         var playedCards = playerManager.GetPlayedCards();
         
-        // Execute pathogen turn with proper error handling
+        // Execute pathogen turn with proper error handling and delay
         try
         {
-            pathogenManager.ExecutePathogenTurn(playerManager.GetPlayer(), playedCards);
-            OnPlayerStatsChanged?.Invoke(playerManager.GetPlayerStats());
+            Debug.Log("TurnManager: Pathogen is responding to your actions...");
             
-            Debug.Log("TurnManager: Pathogen turn executed successfully");
+            // Add delay before pathogen acts for dramatic effect
+            Invoke(nameof(DelayedPathogenActions), pathogenTurnDelay);
         }
         catch (System.Exception e)
         {
             Debug.LogError($"TurnManager: Error during pathogen turn execution: {e.Message}");
+            EndPathogenTurn();
         }
+    }
+    
+    private void DelayedPathogenActions()
+    {
+        if (pathogenManager == null || playerManager == null) 
+        {
+            EndPathogenTurn();
+            return;
+        }
+        
+        var playedCards = playerManager.GetPlayedCards();
+        
+        pathogenManager.ExecutePathogenTurn(playerManager.GetPlayer(), playedCards);
+        OnPlayerStatsChanged?.Invoke(playerManager.GetPlayerStats());
+        
+        Debug.Log("TurnManager: Pathogen turn executed successfully");
         
         // Check if player is defeated
         if (playerManager.GetPlayer().HP <= 0)
@@ -235,9 +277,13 @@ public class TurnManager : MonoBehaviour
             EndGame(false); // Player loses
             return;
         }
-
-        isProcessingTurn = false;
-        // End pathogen turn and start next player turn
+        
+        // End pathogen turn and start next player turn with delay
+        Invoke(nameof(DelayedEndPathogenTurn), startPlayerTurnDelay);
+    }
+    
+    private void DelayedEndPathogenTurn()
+    {
         EndPathogenTurn();
     }
 
@@ -273,9 +319,13 @@ public class TurnManager : MonoBehaviour
             return false;
         }
         
-        if (cardsPlayedThisTurn >= cardsPerTurn)
+        // Check if this is an item or regular card
+        bool isItem = card is ItemSO;
+        
+        // Only count regular cards toward the turn limit, items are unlimited
+        if (!isItem && cardsPlayedThisTurn >= cardsPerTurn)
         {
-            Debug.LogWarning($"Cannot play more cards this turn. Limit: {cardsPerTurn}");
+            Debug.LogWarning($"Cannot play more cards this turn. Limit: {cardsPerTurn} (Items don't count toward limit)");
             // Auto-end turn when limit reached
             EndPlayerTurn();
             return false;
@@ -284,9 +334,14 @@ public class TurnManager : MonoBehaviour
         bool success = playerManager.PlayCard(card, target);
         if (success)
         {
-            cardsPlayedThisTurn++;
+            // Only increment counter for regular cards, not items
+            if (!isItem)
+            {
+                cardsPlayedThisTurn++;
+            }
             
             // Add card to field if it has no immediate effect (like Helper T-Cell or inactive Cytotoxic)
+            // Items typically don't stay in field, only immune cells do
             bool shouldStayInField = ShouldCardStayInField(card);
             if (shouldStayInField && cardField != null)
             {
@@ -295,10 +350,17 @@ public class TurnManager : MonoBehaviour
             
             OnPlayerStatsChanged?.Invoke(playerManager.GetPlayerStats());
             
-            Debug.Log($"Cards played this turn: {cardsPlayedThisTurn}/{cardsPerTurn}");
+            if (isItem)
+            {
+                Debug.Log($"Used item: {card.cardName} (Items don't count toward turn limit)");
+            }
+            else
+            {
+                Debug.Log($"Cards played this turn: {cardsPlayedThisTurn}/{cardsPerTurn}");
+            }
             
-            // Auto-end turn if player has played maximum cards
-            if (cardsPlayedThisTurn >= cardsPerTurn)
+            // Auto-end turn if player has played maximum cards (only count non-items)
+            if (!isItem && cardsPlayedThisTurn >= cardsPerTurn)
             {
                 Debug.Log("Maximum cards played, ending turn automatically");
                 EndPlayerTurn();
@@ -309,40 +371,14 @@ public class TurnManager : MonoBehaviour
 
     private bool ShouldCardStayInField(CardSO card)
     {
-        // Cards that provide ongoing effects or enable combos should stay in field
-        return card is HelperTCellCardSO || 
-               (card is CytotoxicCellCardSO && !HasHelperTInPlayedCards()) ||
-               (card is BCellCardSO && !HasHelperTInPlayedCards());
+        // Items don't stay in field - they have immediate effects
+        if (card is ItemSO)
+            return false;
+            
+        // Only immune cells stay in field for ongoing effects or enable combos
+        return card is CardSO && !(card is ItemSO);
     }
 
-    private bool HasHelperTInPlayedCards()
-    {
-        var playedCards = playerManager.GetPlayedCards();
-        foreach (var card in playedCards)
-        {
-            if (card is HelperTCellCardSO)
-                return true;
-        }
-        return false;
-    }
-
-    public void DrawCard()
-    {
-        if (currentPhase == TurnPhase.PlayerTurn && !isProcessingTurn)
-        {
-            playerManager.DrawCards(1);
-            OnPlayerStatsChanged?.Invoke(playerManager.GetPlayerStats());
-        }
-    }
-
-    public void HealPlayer()
-    {
-        if (currentPhase == TurnPhase.PlayerTurn && !isProcessingTurn)
-        {
-            playerManager.HealPlayer(10);
-            OnPlayerStatsChanged?.Invoke(playerManager.GetPlayerStats());
-        }
-    }
 
     void CheckWinConditions()
     {
@@ -417,6 +453,22 @@ public class TurnManager : MonoBehaviour
         }
     }
     
+    [ContextMenu("Test Turn Timing")]
+    public void TestTurnTiming()
+    {
+        Debug.Log("=== Turn Timing Settings ===");
+        Debug.Log($"End Player Turn Delay: {endPlayerTurnDelay}s");
+        Debug.Log($"Pathogen Turn Delay: {pathogenTurnDelay}s");
+        Debug.Log($"Start Player Turn Delay: {startPlayerTurnDelay}s");
+        Debug.Log($"Total turn transition time: {endPlayerTurnDelay + pathogenTurnDelay + startPlayerTurnDelay}s");
+    }
+    
+    [ContextMenu("Cancel Delayed Actions")]
+    public void DebugCancelDelayedActions()
+    {
+        CancelDelayedTurnTransitions();
+    }
+    
     #endregion
 
     // Public getters for UI and other systems
@@ -428,4 +480,21 @@ public class TurnManager : MonoBehaviour
     public PlayerManager GetPlayerManager() => playerManager;
     public PathogenManager GetPathogenManager() => pathogenManager;
     public List<CardSO> GetPlayerHand() => playerManager?.GetPlayerHand() ?? new List<CardSO>();
+
+    private void OnDestroy()
+    {
+        // Cancel any pending delayed actions when TurnManager is destroyed
+        CancelInvoke();
+    }
+    
+    /// <summary>
+    /// Cancel all delayed turn transitions (useful for game restart/quit)
+    /// </summary>
+    public void CancelDelayedTurnTransitions()
+    {
+        CancelInvoke(nameof(DelayedStartPathogenTurn));
+        CancelInvoke(nameof(DelayedPathogenActions));
+        CancelInvoke(nameof(DelayedEndPathogenTurn));
+        Debug.Log("TurnManager: Cancelled all delayed turn transitions");
+    }
 }

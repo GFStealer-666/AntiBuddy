@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4450e2e9984dc694eb752a18711d4228, type: 3}
+  m_Name: Vaccine Item
+  m_EditorClassIdentifier: 
+  cardName: Vaccine
+  frontCardImage: {fileID: 21300000, guid: 945f65a19fe7c4643a03944796e816b9, type: 3}
+  backCardImage: {fileID: 0}
+  description: 
+  itemType: 3
+  isConsumable: 1
+  maxStack: 1
+  healthBoost: 0
+  defenseBoost: 0
+  percentageDefenseBoost: 0
+  tokenGeneration: 0
+  costType: 0
+  tokenCost: 5
+  hpCost: 5
+  useRandomCost: 0
+  minRandomTokenCost: 2
+  maxRandomTokenCost: 6
+  minRandomHpCost: 1
+  maxRandomHpCost: 3

@@ -1,30 +1,34 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using System.Collections.Generic;
 using TMPro;
 
+/// <summary>
+/// UI component for displaying cards in the field area.
+/// Cards in the field are completely non-interactive - no clicking, no hover effects.
+/// They serve as a visual reminder of what cards the player has in play.
+/// </summary>
 public class CardFieldUI : MonoBehaviour
 {
     [Header("UI References")]
     public Transform fieldContainer;
-    public GameObject cardSlotPrefab;
+    public GameObject cardUIPrefab; // The same CardUI prefab used in hand, but non-clickable
     public CardField cardField;
 
-    [Header("Slot Visuals")]
-    public Color emptySlotColor = Color.gray;
-    public Color occupiedSlotColor = Color.white;
+    [Header("Field Settings")]
+    public float cardSpacing = 10f;
 
-    private List<GameObject> slotUIObjects = new List<GameObject>();
+    private List<GameObject> cardUIObjects = new List<GameObject>();
 
-    void Start()
+    void Awake()
     {
         if (cardField == null)
             cardField = FindFirstObjectByType<CardField>();
-
-        // Subscribe to field changes
+    }
+    private void OnEnable()
+    {
         CardField.OnFieldChanged += UpdateFieldDisplay;
-
-        InitializeFieldUI();
     }
 
     void OnDestroy()
@@ -32,97 +36,79 @@ public class CardFieldUI : MonoBehaviour
         CardField.OnFieldChanged -= UpdateFieldDisplay;
     }
 
-    void InitializeFieldUI()
+    void UpdateFieldDisplay(List<CardSO> cardsInField)
     {
-        if (fieldContainer == null || cardSlotPrefab == null) return;
+        if (fieldContainer == null || cardUIPrefab == null) return;
 
-        // Clear existing UI
-        foreach (var obj in slotUIObjects)
+        // Clear existing card UIs
+        ClearFieldUI();
+
+        // Create CardUI for each card in field
+        for (int i = 0; i < cardsInField.Count; i++)
         {
-            if (obj != null)
-                Destroy(obj);
+            CreateCardUIInField(cardsInField[i], i);
         }
-        slotUIObjects.Clear();
 
-        // Create slot UI objects
-        var fieldSlots = cardField.GetFieldSlots();
-        for (int i = 0; i < fieldSlots.Count; i++)
+        Debug.Log($"CardFieldUI: Updated display with {cardsInField.Count} cards");
+    }
+
+    void ClearFieldUI()
+    {
+        foreach (var cardObj in cardUIObjects)
         {
-            GameObject slotObj = Instantiate(cardSlotPrefab, fieldContainer);
-            slotUIObjects.Add(slotObj);
+            if (cardObj != null)
+                Destroy(cardObj);
+        }
+        cardUIObjects.Clear();
+    }
+
+    void CreateCardUIInField(CardSO card, int index)
+    {
+        if (card == null) return;
+
+        GameObject cardUIObj = Instantiate(cardUIPrefab, fieldContainer);
+        CardUI cardUI = cardUIObj.GetComponent<CardUI>();
+
+        if (cardUI != null)
+        {
+            // Initialize the card UI but make it completely non-interactive
+            cardUI.Initialize(card);
             
-            // Set up slot visual
-            UpdateSlotVisual(slotObj, fieldSlots[i]);
-        }
-    }
-
-    void UpdateFieldDisplay(List<CardSO> activeCards)
-    {
-        if (cardField == null) return;
-
-        var fieldSlots = cardField.GetFieldSlots();
-        
-        for (int i = 0; i < fieldSlots.Count && i < slotUIObjects.Count; i++)
-        {
-            UpdateSlotVisual(slotUIObjects[i], fieldSlots[i]);
-        }
-    }
-
-    void UpdateSlotVisual(GameObject slotObj, CardFieldSlot slot)
-    {
-        if (slotObj == null) return;
-
-        // Update slot background color
-        Image slotImage = slotObj.GetComponent<Image>();
-        if (slotImage != null)
-        {
-            slotImage.color = slot.isOccupied ? occupiedSlotColor : emptySlotColor;
-        }
-
-        // Update card text/icon
-        TextMeshProUGUI slotText = slotObj.GetComponentInChildren<TextMeshProUGUI>();
-        if (slotText != null)
-        {
-            if (slot.isOccupied && slot.card != null)
+            // Disable the button completely to prevent clicking
+            Button cardButton = cardUIObj.GetComponent<Button>();
+            if (cardButton != null)
             {
-                slotText.text = slot.card.cardName;
+                cardButton.interactable = false;
+                cardButton.enabled = false; // Completely disable button component
             }
-            else
+            
+            // Remove all pointer event handlers to prevent hover effects
+            var pointerHandlers = cardUIObj.GetComponents<MonoBehaviour>();
+            foreach (var handler in pointerHandlers)
             {
-                slotText.text = "Empty Slot";
-            }
-        }
-
-        // Update card icon if available
-        Image cardIcon = slotObj.transform.Find("CardIcon")?.GetComponent<Image>();
-        if (cardIcon != null)
-        {
-            if (slot.isOccupied && slot.card != null && slot.card.frontCardImage != null)
-            {
-                cardIcon.sprite = slot.card.frontCardImage;
-                cardIcon.gameObject.SetActive(true);
-            }
-            else
-            {
-                cardIcon.gameObject.SetActive(false);
-            }
-        }
-    }
-
-    public void HighlightAvailableSlots(bool highlight)
-    {
-        var fieldSlots = cardField.GetFieldSlots();
-        
-        for (int i = 0; i < fieldSlots.Count && i < slotUIObjects.Count; i++)
-        {
-            if (!fieldSlots[i].isOccupied)
-            {
-                Image slotImage = slotUIObjects[i].GetComponent<Image>();
-                if (slotImage != null)
+                if (handler is IPointerEnterHandler || handler is IPointerExitHandler || handler is IPointerClickHandler)
                 {
-                    slotImage.color = highlight ? Color.green : emptySlotColor;
+                    (handler as MonoBehaviour).enabled = false;
                 }
             }
+            
+            // Set the card as blocked to prevent any hover effects in CardUI logic
+            cardUI.SetBlocked(true);
+            
+            // Position the card (optional - layout group can handle this too)
+            RectTransform cardRect = cardUIObj.GetComponent<RectTransform>();
+            if (cardRect != null)
+            {
+                cardRect.anchoredPosition = new Vector2(index * cardSpacing, 0);
+            }
+
+            cardUIObjects.Add(cardUIObj);
+            Debug.Log($"CardFieldUI: Created non-interactive UI for {card.cardName} in field position {index}");
+        }
+        else
+        {
+            Debug.LogError("CardFieldUI: CardUI prefab missing CardUI component!");
+            Destroy(cardUIObj);
         }
     }
 }

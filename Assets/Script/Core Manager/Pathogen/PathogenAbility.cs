@@ -42,15 +42,18 @@ public class PathogenAbility
     
     private bool ShouldAttackThisTurn()
     {
-        bool shouldAttack = (pathogenData.currentTurn % pathogenData.AttackInterval) == 1;
+        // Attack on first turn (turn 1), then follow the interval
+        // Example: If interval is 3, attack on turns 1, 4, 7, 10, etc.
+        bool shouldAttack = ((pathogenData.currentTurn - 1) % pathogenData.AttackInterval) == 0;
         
         if (shouldAttack)
         {
-            Debug.Log($"{pathogenData.PathogenName}: ATTACKING this turn (Turn {pathogenData.currentTurn})");
+            Debug.Log($"{pathogenData.PathogenName}: ATTACKING this turn (Turn {pathogenData.currentTurn}) - Attack interval: {pathogenData.AttackInterval}");
         }
         else
         {
-            Debug.Log($"{pathogenData.PathogenName}: Resting this turn (Turn {pathogenData.currentTurn})");
+            int turnsUntilNextAttack = pathogenData.AttackInterval - ((pathogenData.currentTurn - 1) % pathogenData.AttackInterval);
+            Debug.Log($"{pathogenData.PathogenName}: Resting this turn (Turn {pathogenData.currentTurn}) - Next attack in {turnsUntilNextAttack} turn(s)");
         }
         
         return shouldAttack;
@@ -174,6 +177,31 @@ public class PathogenAbility
         return isActive ? healingAbility.value : 0;
     }
     
+    
+    #endregion
+    
+    #region Debug Methods
+    
+    /// <summary>
+    /// Debug method to simulate attack pattern for testing
+    /// </summary>
+    public void DebugAttackPattern(int maxTurns = 10)
+    {
+        Debug.Log($"=== Attack Pattern for {pathogenData.PathogenName} (Interval: {pathogenData.AttackInterval}) ===");
+        
+        int originalTurn = pathogenData.currentTurn;
+        
+        for (int turn = 1; turn <= maxTurns; turn++)
+        {
+            pathogenData.currentTurn = turn;
+            bool wouldAttack = ((turn - 1) % pathogenData.AttackInterval) == 0;
+            string status = wouldAttack ? "ATTACK" : "rest";
+            Debug.Log($"Turn {turn}: {status}");
+        }
+        
+        // Restore original turn
+        pathogenData.currentTurn = originalTurn;
+    }
     
     #endregion
 }

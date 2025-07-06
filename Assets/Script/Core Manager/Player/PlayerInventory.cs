@@ -33,22 +33,29 @@ public class PlayerInventory
 
     public bool PurchaseItem(ItemSO item, PlayerTokens playerTokens)
     {
-        if (!playerTokens.CanAfford(item.cost))
-        {
-            Console.WriteLine($"Cannot afford {item.itemName}. Cost: {item.cost}, Available: {playerTokens.Tokens}");
-            return false;
-        }
-
+        // This method is deprecated - use ShopManager.PurchaseItem instead
+        // Keeping for compatibility but shop should handle purchasing now
+        Debug.LogWarning("PlayerInventory.PurchaseItem is deprecated - use ShopManager instead");
+        
         if (!CanAddItem(item))
         {
-            Console.WriteLine($"Cannot add {item.itemName} to inventory. Inventory full or item limit reached.");
+            Debug.LogWarning($"Cannot add {item.cardName} to inventory. Inventory full or item limit reached.");
             return false;
         }
 
-        if (playerTokens.SpendTokens(item.cost))
+        // Simple token cost for compatibility
+        int cost = item.tokenCost > 0 ? item.tokenCost : 5; // Default cost
+        
+        if (playerTokens.Tokens < cost)
+        {
+            Debug.LogWarning($"Cannot afford {item.cardName}. Cost: {cost}, Available: {playerTokens.Tokens}");
+            return false;
+        }
+
+        if (playerTokens.SpendTokens(cost))
         {
             AddItem(item);
-            Console.WriteLine($"Purchased {item.itemName} for {item.cost} tokens");
+            Debug.Log($"Purchased {item.cardName} for {cost} tokens");
             return true;
         }
 
@@ -81,25 +88,29 @@ public class PlayerInventory
         var slot = Items.FirstOrDefault(s => s.item == item);
         if (slot == null)
         {
-            Console.WriteLine($"Item {item.itemName} not found in inventory");
+            Debug.LogWarning($"Item {item.cardName} not found in inventory");
             return false;
         }
 
-        if (!item.CanUse(player))
+        // Items are now played through the card system (since ItemSO inherits from CardSO)
+        bool success = player.PlayCard(item);
+        
+        if (success)
         {
-            Console.WriteLine($"Cannot use {item.itemName} right now");
-            return false;
+            OnItemUsed?.Invoke(item);
+            
+            if (item.isConsumable)
+            {
+                RemoveItem(item, 1);
+                Debug.Log($"Used and consumed {item.cardName}");
+            }
+            else
+            {
+                Debug.Log($"Used {item.cardName} (not consumed)");
+            }
         }
 
-        item.UseItem(player);
-        OnItemUsed?.Invoke(item);
-
-        if (item.isConsumable)
-        {
-            RemoveItem(item, 1);
-        }
-
-        return true;
+        return success;
     }
 
     public bool RemoveItem(ItemSO item, int quantity = 1)

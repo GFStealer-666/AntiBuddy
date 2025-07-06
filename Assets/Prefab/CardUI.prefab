@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 1678317504060621366}
   - component: {fileID: 9012585163782420669}
   - component: {fileID: 7501471608775401640}
-  - component: {fileID: 7050634708834914175}
   m_Layer: 5
   m_Name: Button
   m_TagString: Untagged
@@ -121,26 +120,6 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls: []
---- !u!114 &7050634708834914175
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1998493631143121541}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_IgnoreLayout: 0
-  m_MinWidth: -1
-  m_MinHeight: -1
-  m_PreferredWidth: 100
-  m_PreferredHeight: 120
-  m_FlexibleWidth: -1
-  m_FlexibleHeight: -1
-  m_LayoutPriority: 1
 --- !u!1 &6186655190407849423
 GameObject:
   m_ObjectHideFlags: 0
@@ -151,6 +130,7 @@ GameObject:
   m_Component:
   - component: {fileID: 6092808905155259721}
   - component: {fileID: 187107530447378575}
+  - component: {fileID: 859123191812222871}
   m_Layer: 5
   m_Name: CardUI
   m_TagString: Untagged
@@ -194,3 +174,23 @@ MonoBehaviour:
   cardButton: {fileID: 7501471608775401640}
   normalColor: {r: 1, g: 1, b: 1, a: 1}
   hoverColor: {r: 0.7735849, g: 0.7735849, b: 0.7735849, a: 1}
+--- !u!114 &859123191812222871
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6186655190407849423}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 306cc8c2b49d7114eaa3623786fc2126, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_IgnoreLayout: 0
+  m_MinWidth: -1
+  m_MinHeight: -1
+  m_PreferredWidth: -1
+  m_PreferredHeight: -1
+  m_FlexibleWidth: -1
+  m_FlexibleHeight: -1
+  m_LayoutPriority: 1

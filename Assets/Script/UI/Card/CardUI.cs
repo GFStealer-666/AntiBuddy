@@ -15,11 +15,9 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler,
     
     [Header("Visual Settings")]
     [SerializeField] private Color normalColor = Color.white;
-    [SerializeField] private Color hoverColor = Color.grey;
     
     private CardSO cardData;
     private bool isSelected = false;
-    private bool isHovered = false;
     private bool isBlocked = false; // Add blocked state
     
     // Event for when this card is clicked
@@ -80,8 +78,6 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler,
             interactable = false;
             targetColor = normalColor;
         }
-        else if (isHovered)
-            targetColor = hoverColor;
         else
             targetColor = normalColor;
             
@@ -159,7 +155,6 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler,
     {
         if (isBlocked) return; // No hover effect when blocked
         
-        isHovered = true;
         UpdateVisualState();
     }
     
@@ -169,7 +164,6 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler,
     /// <param name="eventData">Pointer event data</param>
     public void OnPointerExit(PointerEventData eventData)
     {
-        isHovered = false;
         UpdateVisualState();
     }
     

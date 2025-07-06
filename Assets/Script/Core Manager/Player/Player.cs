@@ -10,6 +10,9 @@ public class Player
     public PlayerCards PlayerCards { get; private set; }
     public PlayerInventory PlayerInventory { get; private set; }
 
+    // Temporary effect flags
+    public bool HasVaccineBoost { get; private set; } = false;
+
     public Player(int startingHP)
     {
         PlayerHealth = new PlayerHealth(startingHP);
@@ -40,17 +43,34 @@ public class Player
 
     public bool UseItem(ItemSO item)
     {
-        if (item.CanUse(this))
-        {
-            item.UseItem(this);
-            return true;
-        }
-        return false;
+        // Items are now played like cards through the card system
+        return PlayCard(item);
     }
 
     public bool CanUseItem(ItemSO item)
     {
-        return item.CanUse(this);
+        // Items can always be used (they're in inventory already)
+        return true;
+    }
+
+    // Vaccine boost methods
+    public void ApplyVaccineBoost()
+    {
+        HasVaccineBoost = true;
+        Debug.Log("Player: Vaccine boost activated - next card effect will be doubled!");
+    }
+
+    public void ConsumeVaccineBoost()
+    {
+        HasVaccineBoost = false;
+        Debug.Log("Player: Vaccine boost consumed");
+    }
+
+    public void ResetTemporaryEffects()
+    {
+        HasVaccineBoost = false;
+        PlayerDefense.ResetDefense();
+        Debug.Log("Player: All temporary effects reset for new turn");
     }
 
     public void ResetTurnStats()

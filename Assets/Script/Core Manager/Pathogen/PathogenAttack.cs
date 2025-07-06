@@ -26,7 +26,7 @@ public class PathogenAttack
             return;
         }
         
-        if (!pathogenAbility.CanAttackThisTurn())
+        if (!pathogenAbility.CanAttackThisTurn()) // * Check if the pathogen can attack this turn
         {
             Debug.Log($"{pathogenData.PathogenName} is not attacking this turn");
             OnAttackSkipped?.Invoke();

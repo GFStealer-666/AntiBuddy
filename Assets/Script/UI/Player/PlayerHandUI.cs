@@ -108,17 +108,23 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
         
         ClearCardUIs();
         
+        // Add regular cards
         foreach (CardSO card in player.Hand)
         {
             CreateCardUI(card);
         }
-        foreach (var itemCard in player.Item)
+        
+        // Add items from inventory (items don't count toward hand limit)
+        foreach (var inventorySlot in player.PlayerInventory.Items)
         {
-            CreateItemUI(itemCard.item);
+            if (inventorySlot.item is CardSO itemAsCard)
+            {
+                CreateCardUI(itemAsCard);
+            }
         }
         
         // Update blocking status after creating all cards
-            UpdateCardBlocking();
+        UpdateCardBlocking();
     }
     
     private void ClearCardUIs()
@@ -137,26 +143,6 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
         }
         currentCardObjects.Clear();
     }
-    private void CreateItemUI(ItemSO item)
-    {
-        if (cardPrefab == null) return;
-
-        GameObject cardObject = Instantiate(cardPrefab, cardContainer);
-        CardUI cardUI = cardObject.GetComponent<CardUI>();
-
-        if (cardUI != null)
-        {
-            // cardUI.Initialize(item);
-            cardUI.OnCardClicked += OnCardClicked;
-            currentCardObjects.Add(cardObject);
-        }
-        else
-        {
-            Debug.LogError("Card prefab must have CardUI component!");
-            Destroy(cardObject);
-        }
-    }
-    
     private void CreateCardUI(CardSO card)
     {
         if (cardPrefab == null) return;
