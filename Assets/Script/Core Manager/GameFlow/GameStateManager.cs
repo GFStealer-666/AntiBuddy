@@ -76,6 +76,12 @@ public class GameStateManager
     {
         return currentState == GameState.InProgress;
     }
-}
     
+    // Get the current game state
+    public GameState GetCurrentState()
+    {
+        return currentState;
+    }
+}
+
 

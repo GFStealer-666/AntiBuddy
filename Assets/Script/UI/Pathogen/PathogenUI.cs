@@ -17,7 +17,7 @@ public class PathogenUI : MonoBehaviour
         if (pathogenManager != null)
         {
             pathogenManager.OnPathogenSpawned += DisplayPathogen;
-            pathogenManager.OnPathogenDefeated += ClearDisplay;
+            pathogenManager.OnAllPathogensDefeated += ClearDisplayOnGameEnd;
         }
         else
         {
@@ -31,7 +31,7 @@ public class PathogenUI : MonoBehaviour
         if (pathogenManager != null)
         {
             pathogenManager.OnPathogenSpawned -= DisplayPathogen;
-            pathogenManager.OnPathogenDefeated -= ClearDisplay;
+            pathogenManager.OnAllPathogensDefeated -= ClearDisplayOnGameEnd;
         }
     }
     
@@ -50,14 +50,13 @@ public class PathogenUI : MonoBehaviour
         }
     }
     
-    private void ClearDisplay(Pathogen pathogen)
+    
+    private void ClearDisplayOnGameEnd()
     {
-        // Clear UI when pathogen dies
+        Debug.Log("PathogenUI: Game ended - clearing pathogen display");
         if (pathogenImage != null)
         {
-            pathogenImage.sprite = null;
         }
-        
         currentPathogen = null;
     }
 }

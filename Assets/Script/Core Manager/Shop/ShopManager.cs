@@ -33,8 +33,9 @@ public class ShopManager : MonoBehaviour
     {
         if (showShopAtTurnStart && phase == TurnPhase.PlayerTurn)
         {
-            // Show shop at start of player turn
-            OpenShop();
+            // Refresh shop items at start of each player turn
+            Debug.Log("ShopManager: Player turn started - refreshing shop items");
+            RefreshShop();
         }
     }
     
@@ -45,11 +46,25 @@ public class ShopManager : MonoBehaviour
         GenerateRandomItems();
         shopIsOpen = true;
         OnShopOpened?.Invoke(currentShopItems);
+    }
+
+    public void RefreshShop()
+    {
+        Debug.Log("ShopManager: Refreshing shop with new items");
+        GenerateRandomItems();
         
+        if (!shopIsOpen)
+        {
+            shopIsOpen = true;
+        }
+        
+        OnShopOpened?.Invoke(currentShopItems);
+        Debug.Log($"ShopManager: Shop refreshed with {currentShopItems.Count} new items");
     }
     
     private void GenerateRandomItems()
     {
+        Debug.Log("ShopManager: Generating new random items for shop");
         currentShopItems.Clear();
         
         if (availableItems.Count == 0)
@@ -72,7 +87,11 @@ public class ShopManager : MonoBehaviour
             
             currentShopItems.Add(selectedItem);
             itemPool.RemoveAt(randomIndex); // Remove to avoid duplicates
+            
+            Debug.Log($"ShopManager: Added {selectedItem.cardName} to shop");
         }
+        
+        Debug.Log($"ShopManager: Generated {currentShopItems.Count} items for shop");
     }
     
     public bool PurchaseItem(ItemSO item, Player player, bool useHealth = false)
@@ -148,10 +167,26 @@ public class ShopManager : MonoBehaviour
         // Add item to inventory
         player.PlayerInventory.AddItem(item);
         
+        // Force immediate PlayerHandUI refresh to ensure purchased items appear immediately
+        var playerHandUI = FindFirstObjectByType<PlayerHandUI>();
+        if (playerHandUI != null)
+        {
+            playerHandUI.RefreshHand();
+            Debug.Log("ShopManager: Forced PlayerHandUI refresh after item purchase");
+        }
+        
         // Remove from shop (optional - items could be unlimited)
         currentShopItems.Remove(item);
         
         Debug.Log($"Purchased {item.cardName} for {costDescription}!");
+        
+        // Log the purchase via GameManager
+        var gameManager = FindFirstObjectByType<GameManager>();
+        if (gameManager != null)
+        {
+            gameManager.LogItemPurchase($"{item.cardName} for {costDescription}");
+        }
+        
         return true;
     }
     
@@ -183,6 +218,13 @@ public class ShopManager : MonoBehaviour
         Debug.Log($"Available Items: {availableItems.Count}");
         Debug.Log($"Current Shop Items: {currentShopItems.Count}");
         Debug.Log($"Items per shop: {itemsPerShop}");
+    }
+
+    [ContextMenu("Force Refresh Shop")]
+    public void ForceRefreshShop()
+    {
+        Debug.Log("ShopManager: Manual shop refresh requested");
+        RefreshShop();
     }
     
     #endregion

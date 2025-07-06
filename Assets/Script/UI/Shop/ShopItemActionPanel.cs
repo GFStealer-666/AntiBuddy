@@ -95,7 +95,7 @@ public class ShopItemActionPanel : MonoBehaviour
 
         // Update item icon
         if (itemIcon != null && currentItem.frontCardImage != null)
-
+            itemIcon.sprite = currentItem.frontCardImage;
         // Update button availability and cost display based on item cost type
         UpdatePurchaseOptions();
     }
@@ -107,6 +107,17 @@ public class ShopItemActionPanel : MonoBehaviour
         // Get player for affordability checks
         Player player = shopHandler?.GetPlayer();
         bool hasPlayer = player != null;
+        
+        // Debug logging
+        if (!hasPlayer)
+        {
+            Debug.LogWarning("ShopItemActionPanel: Player is null, cannot check affordability");
+        }
+        else
+        {
+            Debug.Log($"ShopItemActionPanel: Player found - HP: {player.HP}, Tokens: {player.Tokens}");
+            Debug.Log($"ShopItemActionPanel: Item {currentItem.cardName} costs - HP: {currentItem.hpCost}, Tokens: {currentItem.tokenCost}, Type: {currentItem.costType}");
+        }
         
         // Check what purchase options are available and affordable
         bool canBuyWithTokens = false;
@@ -143,9 +154,7 @@ public class ShopItemActionPanel : MonoBehaviour
                 buyWithTokensButton.interactable = canAffordTokens;
                 if (tokenCostText != null)
                 {
-                    string affordabilityText = canAffordTokens ? "" : " (Can't Afford)";
-                    tokenCostText.text = $"Buy for {currentItem.tokenCost} Tokens{affordabilityText}";
-                    tokenCostText.color = canAffordTokens ? Color.white : Color.red;
+                    tokenCostText.text = $"{currentItem.tokenCost} Tokens";
                 }
             }
         }
@@ -158,9 +167,7 @@ public class ShopItemActionPanel : MonoBehaviour
                 buyWithHealthButton.interactable = canAffordHealth;
                 if (healthCostText != null)
                 {
-                    string affordabilityText = canAffordHealth ? "" : " (Can't Afford)";
-                    healthCostText.text = $"Buy for {currentItem.hpCost} HP{affordabilityText}";
-                    healthCostText.color = canAffordHealth ? Color.white : Color.red;
+                    healthCostText.text = $"{currentItem.hpCost} HP";
                 }
             }
         }

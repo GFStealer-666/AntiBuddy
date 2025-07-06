@@ -12,5 +12,10 @@ public class AdrenaliteItemSO : ItemSO
         CardEffects.AddTokens(player, 5);
         
         Debug.Log($"Adrenaline used - gained 5 tokens");
+        
+        // Log via GameManager
+        var gameManager = FindFirstObjectByType<GameManager>();
+        if (gameManager != null)
+            gameManager.LogCardEffect("Adrenaline", "gained 5 tokens");
     }
 }

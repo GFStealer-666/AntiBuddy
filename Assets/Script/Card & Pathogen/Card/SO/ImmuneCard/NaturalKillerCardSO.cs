@@ -11,5 +11,14 @@ public class NaturalKillerCardSO : CardSO
         CardEffects.DealDamage(target, damage);
         
         Debug.Log($"Natural Killer: Instant attack for {damage} damage");
+        
+        // Log via GameManager
+        var gameManager = FindFirstObjectByType<GameManager>();
+        if (gameManager != null)
+        {
+            gameManager.LogCardEffect("Natural Killer", $"instant attack for {damage} damage");
+            if (target != null)
+                gameManager.LogDamage("Player (Natural Killer)", target.GetPathogenName(), damage);
+        }
     }
 }

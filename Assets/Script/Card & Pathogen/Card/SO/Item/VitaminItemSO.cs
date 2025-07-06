@@ -11,5 +11,10 @@ public class VitaminItemSO : ItemSO
         
         CardEffects.HealPlayer(player, 20);
         Debug.Log($"Vitamin used successfully - healed 20 HP");
+        
+        // Log via GameManager
+        var gameManager = FindFirstObjectByType<GameManager>();
+        if (gameManager != null)
+            gameManager.LogCardEffect("Vitamin", "healed 20 HP");
     }
 }

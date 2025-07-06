@@ -54,6 +54,13 @@ public static class CardEffects
         if (cardToAdd != null)
         {
             player.PlayerCards.AddCardToHand(cardToAdd);
+            
+            // Log card addition via GameManager
+            var gameManager = Object.FindFirstObjectByType<GameManager>();
+            if (gameManager != null)
+            {
+                gameManager.LogCardAddedToHand(cardToAdd.cardName);
+            }
         }
     }
 

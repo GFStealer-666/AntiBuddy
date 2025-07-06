@@ -26,22 +26,29 @@ public class PlayerCards
         {
             Hand.Add(card);
             OnCardAddedToHand?.Invoke(card);
-            Console.WriteLine($"Added {card.cardName} to hand. Hand size: {Hand.Count}");
+            Debug.Log($"Added {card.cardName} to hand. Hand size: {Hand.Count}");
         }
+
     }
 
     public bool PlayCard(CardSO card, Player player, Pathogen target = null)
     {
         if (Hand.Contains(card))
         {
+            Debug.Log($"PlayerCards: Playing {card.cardName}. Hand size before: {Hand.Count}");
+            
             Hand.Remove(card);
             PlayedCards.Add(card);
+            
+            Debug.Log($"PlayerCards: Removed {card.cardName} from hand. Hand size now: {Hand.Count}");
             
             // Check if vaccine boost is active (double effect)
             bool hasVaccineBoost = player.HasVaccineBoost;
             
             // Apply card effect
+            Debug.Log($"PlayerCards: Applying effect for {card.cardName}");
             card.ApplyEffect(player, PlayedCards, target);
+            Debug.Log($"PlayerCards: Effect applied. Hand size after effect: {Hand.Count}");
             
             // If vaccine boost was active, apply effect again
             if (hasVaccineBoost && !(card is ItemSO))
@@ -49,13 +56,15 @@ public class PlayerCards
                 Debug.Log($"Vaccine Boost: Doubling effect of {card.cardName}!");
                 card.ApplyEffect(player, PlayedCards, target);
                 player.ConsumeVaccineBoost(); // Remove boost after use
+                Debug.Log($"PlayerCards: Double effect applied. Final hand size: {Hand.Count}");
             }
             
+            Debug.Log($"PlayerCards: Firing OnCardPlayed event for {card.cardName}");
             OnCardPlayed?.Invoke(card);
-            Console.WriteLine($"Played {card.cardName}");
+            Debug.Log($"Played {card.cardName}");
             return true;
         }
-        Console.WriteLine($"Card {card.cardName} not found in hand!");
+        Debug.Log($"Card {card.cardName} not found in hand!");
         return false;
     }
 

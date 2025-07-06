@@ -19,6 +19,7 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler,
     private CardSO cardData;
     private bool isSelected = false;
     private bool isBlocked = false; // Add blocked state
+    private bool isFieldDisplay = false; // Add field display state
     
     // Event for when this card is clicked
     public System.Action<CardUI> OnCardClicked;
@@ -108,6 +109,31 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler,
         UpdateVisualState();
     }
     
+    /// <summary>
+    /// Completely disable this card for field display - no interactions, normal appearance
+    /// </summary>
+    public void SetAsFieldDisplay()
+    {
+        isFieldDisplay = true;
+        isBlocked = false; // Don't use blocked state as it might change appearance
+        isSelected = false; // Ensure not selected
+        
+        // Disable button completely
+        if (cardButton != null)
+        {
+            cardButton.enabled = false;
+        }
+        
+        // Ensure normal color is maintained
+        if (cardIcon != null)
+        {
+            cardIcon.color = normalColor;
+        }
+        
+        // Clear any click handlers
+        OnCardClicked = null;
+    }
+
     #endregion
     
     #region Data Access
@@ -140,8 +166,8 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler,
     /// <param name="eventData">Click event data</param>
     public void OnPointerClick(PointerEventData eventData)
     {
-        // Don't fire click if blocked
-        if (isBlocked) return;
+        // Don't fire click if blocked or in field display
+        if (isBlocked || isFieldDisplay) return;
         
         // Fire the click event
         OnCardClicked?.Invoke(this);
@@ -153,7 +179,7 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler,
     /// <param name="eventData">Pointer event data</param>
     public void OnPointerEnter(PointerEventData eventData)
     {
-        if (isBlocked) return; // No hover effect when blocked
+        if (isBlocked || isFieldDisplay) return; // No hover effect when blocked or field display
         
         UpdateVisualState();
     }
@@ -164,6 +190,8 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler,
     /// <param name="eventData">Pointer event data</param>
     public void OnPointerExit(PointerEventData eventData)
     {
+        if (isFieldDisplay) return; // No hover effect changes in field display
+        
         UpdateVisualState();
     }
     

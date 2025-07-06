@@ -64,11 +64,23 @@ public class TurnManager : MonoBehaviour
             playerManager = playerManagerObj.AddComponent<PlayerManager>();
         }
         
+        // Subscribe to player death event for immediate game over check
+        if (playerManager != null && playerManager.GetPlayer() != null)
+        {
+            playerManager.GetPlayer().PlayerHealth.OnPlayerDied += OnPlayerDied;
+        }
+        
         // Find or create PathogenManager
         pathogenManager = FindFirstObjectByType<PathogenManager>();
         if (pathogenManager == null)
         {
             pathogenManager = gameObject.AddComponent<PathogenManager>();
+        }
+        
+        // Subscribe to pathogen victory event for immediate win condition check
+        if (pathogenManager != null)
+        {
+            pathogenManager.OnAllPathogensDefeated += OnAllPathogensDefeated;
         }
 
         if (cardField == null)
@@ -97,7 +109,7 @@ public class TurnManager : MonoBehaviour
             if (turnTimer <= 0)
             {
                 Debug.Log("Turn time limit reached, ending player turn");
-                EndPlayerTurn();
+                EndPlayerTurn("time limit reached");
             }
         }
     }
@@ -172,6 +184,53 @@ public class TurnManager : MonoBehaviour
         isProcessingTurn = true;
         Debug.Log("=== Player Turn Ended ===");
         Debug.Log($"Cards played this turn: {cardsPlayedThisTurn}");
+        
+        // Log turn end via GameManager for UI display
+        var gameManager = FindFirstObjectByType<GameManager>();
+        if (gameManager != null)
+        {
+            gameManager.LogTurnEnd();
+        }
+        
+        Debug.Log("Cards remain in field for pathogen turn...");
+        
+        // DON'T clear the field here - keep cards visible during pathogen turn
+        // Player can see what they played while pathogen responds
+        
+        CheckWinConditions();
+        
+        if (currentPhase != TurnPhase.GameOver)
+        {
+            Debug.Log($"TurnManager: Starting pathogen turn in {endPlayerTurnDelay} seconds...");
+            // Add delay before pathogen turn starts
+            Invoke(nameof(DelayedStartPathogenTurn), endPlayerTurnDelay);
+        }
+        else
+        {
+            Debug.Log("TurnManager: Game is over, not starting pathogen turn");
+            isProcessingTurn = false;
+        }
+    }
+
+    public void EndPlayerTurn(string reason)
+    {
+        if (isProcessingTurn || currentPhase != TurnPhase.PlayerTurn) 
+        {
+            Debug.LogWarning($"TurnManager: Cannot end player turn - isProcessingTurn: {isProcessingTurn}, currentPhase: {currentPhase}");
+            return;
+        }
+        
+        isProcessingTurn = true;
+        Debug.Log($"=== Player Turn Ended: {reason} ===");
+        Debug.Log($"Cards played this turn: {cardsPlayedThisTurn}");
+        
+        // Log turn end with reason via GameManager for UI display
+        var gameManager = FindFirstObjectByType<GameManager>();
+        if (gameManager != null)
+        {
+            gameManager.LogTurnEnd(reason);
+        }
+        
         Debug.Log("Cards remain in field for pathogen turn...");
         
         // DON'T clear the field here - keep cards visible during pathogen turn
@@ -327,11 +386,30 @@ public class TurnManager : MonoBehaviour
         {
             Debug.LogWarning($"Cannot play more cards this turn. Limit: {cardsPerTurn} (Items don't count toward limit)");
             // Auto-end turn when limit reached
-            EndPlayerTurn();
+            EndPlayerTurn("card limit reached");
             return false;
         }
         
-        bool success = playerManager.PlayCard(card, target);
+        bool success;
+        if (isItem)
+        {
+            // For items, check if it's in inventory and use the inventory method
+            ItemSO item = card as ItemSO;
+            if (playerManager.GetPlayer().PlayerInventory.HasItem(item))
+            {
+                success = playerManager.UseInventoryItem(item, target);
+            }
+            else
+            {
+                // Item might be in hand (not purchased yet), use regular play method
+                success = playerManager.PlayCard(card, target);
+            }
+        }
+        else
+        {
+            // For regular cards, use the standard method
+            success = playerManager.PlayCard(card, target);
+        }
         if (success)
         {
             // Only increment counter for regular cards, not items
@@ -363,7 +441,7 @@ public class TurnManager : MonoBehaviour
             if (!isItem && cardsPlayedThisTurn >= cardsPerTurn)
             {
                 Debug.Log("Maximum cards played, ending turn automatically");
-                EndPlayerTurn();
+                EndPlayerTurn("card limit reached");
             }
         }
         return success;
@@ -393,6 +471,24 @@ public class TurnManager : MonoBehaviour
         {
             EndGame(false); // Player loses
         }
+    }
+
+    /// <summary>
+    /// Called immediately when player dies - ensures instant game over
+    /// </summary>
+    void OnPlayerDied()
+    {
+        Debug.Log("TurnManager: Player died! Ending game immediately.");
+        EndGame(false); // Player loses
+    }
+
+    /// <summary>
+    /// Called immediately when all pathogens are defeated - ensures instant victory
+    /// </summary>
+    void OnAllPathogensDefeated()
+    {
+        Debug.Log("TurnManager: All pathogens defeated! Player wins immediately.");
+        EndGame(true); // Player wins
     }
 
     void EndGame(bool playerWon)
@@ -483,6 +579,18 @@ public class TurnManager : MonoBehaviour
 
     private void OnDestroy()
     {
+        // Unsubscribe from player death event
+        if (playerManager != null && playerManager.GetPlayer() != null)
+        {
+            playerManager.GetPlayer().PlayerHealth.OnPlayerDied -= OnPlayerDied;
+        }
+        
+        // Unsubscribe from pathogen victory event
+        if (pathogenManager != null)
+        {
+            pathogenManager.OnAllPathogensDefeated -= OnAllPathogensDefeated;
+        }
+        
         // Cancel any pending delayed actions when TurnManager is destroyed
         CancelInvoke();
     }

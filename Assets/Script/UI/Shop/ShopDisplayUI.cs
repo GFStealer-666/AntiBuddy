@@ -24,6 +24,20 @@ public class ShopDisplayUI : MonoBehaviour, IShopItemActionHandler
     
     void Awake()
     {
+        // Find player if not assigned
+        if (player == null)
+        {
+            PlayerManager playerManager = FindFirstObjectByType<PlayerManager>();
+            if (playerManager != null)
+            {
+                player = playerManager.GetPlayer();
+            }
+            
+            if (player == null)
+            {
+                Debug.LogError("ShopDisplayUI: Could not find Player through PlayerManager!");
+            }
+        }
 
         // Subscribe to shop events
         ShopManager.OnShopOpened += OnShopOpened;

@@ -119,11 +119,15 @@ public class PlayerInventory
         if (slot == null || slot.quantity < quantity)
             return false;
 
+        Debug.Log($"PlayerInventory: Removing {quantity} x {item.cardName} from inventory. Current quantity: {slot.quantity}");
+        
         slot.quantity -= quantity;
+        Debug.Log($"PlayerInventory: Firing OnItemRemoved event for {item.cardName} (x{quantity})");
         OnItemRemoved?.Invoke(item, quantity);
 
         if (slot.quantity <= 0)
         {
+            Debug.Log($"PlayerInventory: Item {item.cardName} quantity reached 0, removing slot entirely");
             Items.Remove(slot);
         }
 
@@ -149,5 +153,37 @@ public class PlayerInventory
     public bool HasItem(ItemSO item)
     {
         return GetItemCount(item) > 0;
+    }
+
+    /// <summary>
+    /// Consume an item from inventory (for when effect is already applied externally)
+    /// </summary>
+    public bool ConsumeItem(ItemSO item)
+    {
+        if (!HasItem(item))
+        {
+            Debug.LogWarning($"Item {item.cardName} not found in inventory");
+            return false;
+        }
+
+        Debug.Log($"PlayerInventory: Consuming {item.cardName} from inventory");
+        
+        // Fire the item used event
+        Debug.Log($"PlayerInventory: Firing OnItemUsed event for {item.cardName}");
+        OnItemUsed?.Invoke(item);
+        
+        // Remove item if it's consumable
+        if (item.isConsumable)
+        {
+            Debug.Log($"PlayerInventory: Item {item.cardName} is consumable, removing from inventory");
+            RemoveItem(item, 1);
+            Debug.Log($"PlayerInventory: Removed {item.cardName} from inventory");
+        }
+        else
+        {
+            Debug.Log($"PlayerInventory: {item.cardName} used but not consumed");
+        }
+        
+        return true;
     }
 }

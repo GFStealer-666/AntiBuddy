@@ -30,7 +30,8 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
     
     void Update()
     {
-        if (Time.time - lastRefreshTime > refreshRate)
+        // Reduced polling frequency since we now have event-driven updates
+        if (Time.time - lastRefreshTime > refreshRate * 5f) // 5x slower polling as backup
         {
             CheckForHandChanges();
             lastRefreshTime = Time.time;
@@ -70,11 +71,45 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
         // Find player if not assigned
         if (player == null)
         {
-            var gameManager = FindFirstObjectByType<GameManager>();
-            if (gameManager != null)
+            // Try to get player from PlayerManager first
+            if (playerManager != null)
             {
-                player = gameManager.GetPlayer();
+                player = playerManager.GetPlayer();
             }
+            else
+            {
+                // Fallback to GameManager
+                var gameManager = FindFirstObjectByType<GameManager>();
+                if (gameManager != null)
+                {
+                    player = gameManager.GetPlayer();
+                }
+            }
+        }
+        
+        // Subscribe to player card events for immediate updates
+        if (player?.PlayerCards != null)
+        {
+            player.PlayerCards.OnCardAddedToHand += OnCardAddedToHand;
+            player.PlayerCards.OnCardPlayed += OnCardPlayed;
+            Debug.Log("PlayerHandUI: Successfully subscribed to PlayerCards events");
+        }
+        else
+        {
+            Debug.LogWarning("PlayerHandUI: Could not subscribe to PlayerCards events - player or PlayerCards is null");
+        }
+        
+        // Subscribe to inventory events for immediate updates when items are purchased
+        if (player?.PlayerInventory != null)
+        {
+            player.PlayerInventory.OnItemAdded += OnItemAddedToInventory;
+            player.PlayerInventory.OnItemRemoved += OnItemRemovedFromInventory;
+            player.PlayerInventory.OnItemUsed += OnItemUsedFromInventory;
+            Debug.Log("PlayerHandUI: Successfully subscribed to PlayerInventory events");
+        }
+        else
+        {
+            Debug.LogWarning("PlayerHandUI: Could not subscribe to PlayerInventory events - player or PlayerInventory is null");
         }
     }
     
@@ -84,6 +119,21 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
         {
             pathogenManager.OnPathogenSpawned -= OnPathogenChanged;
             pathogenManager.OnPathogenDefeated -= OnPathogenChanged;
+        }
+        
+        // Unsubscribe from player card events
+        if (player?.PlayerCards != null)
+        {
+            player.PlayerCards.OnCardAddedToHand -= OnCardAddedToHand;
+            player.PlayerCards.OnCardPlayed -= OnCardPlayed;
+        }
+        
+        // Unsubscribe from inventory events
+        if (player?.PlayerInventory != null)
+        {
+            player.PlayerInventory.OnItemAdded -= OnItemAddedToInventory;
+            player.PlayerInventory.OnItemRemoved -= OnItemRemovedFromInventory;
+            player.PlayerInventory.OnItemUsed -= OnItemUsedFromInventory;
         }
     }
     
@@ -108,20 +158,28 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
         
         ClearCardUIs();
         
+        int cardsAdded = 0;
+        int itemsAdded = 0;
+        
         // Add regular cards
         foreach (CardSO card in player.Hand)
         {
             CreateCardUI(card);
+            cardsAdded++;
         }
         
         // Add items from inventory (items don't count toward hand limit)
         foreach (var inventorySlot in player.PlayerInventory.Items)
         {
-            if (inventorySlot.item is CardSO itemAsCard)
+            if (inventorySlot.item != null)
             {
-                CreateCardUI(itemAsCard);
+                // ItemSO inherits from CardSO, so this should work
+                CreateCardUI(inventorySlot.item);
+                itemsAdded++;
             }
         }
+        
+        Debug.Log($"PlayerHandUI: Refreshed hand - {cardsAdded} cards, {itemsAdded} items from inventory");
         
         // Update blocking status after creating all cards
         UpdateCardBlocking();
@@ -166,12 +224,6 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
     #endregion
     
     #region Card Blocking
-    
-    private void OnPathogenChanged(Pathogen pathogen)
-    {
-        // Update card blocking when pathogens change
-        UpdateCardBlocking();
-    }
     
     /// <summary>
     /// Update which cards are blocked based on active pathogen abilities
@@ -273,9 +325,20 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
     
     #region Public Methods
     
-    public void ForceRefresh()
+    /// <summary>
+    /// Force refresh the hand UI immediately - useful for debugging
+    /// </summary>
+    [ContextMenu("Force Refresh Hand")]
+    public void ForceRefreshHand()
     {
+        Debug.Log($"PlayerHandUI: Manual force refresh requested. Hand size: {player?.PlayerCards?.Hand?.Count ?? 0}");
         RefreshHand();
+        
+        if (player?.PlayerCards?.Hand != null)
+        {
+            lastHandCount = player.PlayerCards.Hand.Count;
+            Debug.Log($"PlayerHandUI: Updated lastHandCount to {lastHandCount}");
+        }
     }
     
     public int GetHandCount()
@@ -287,6 +350,66 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
     {
         player = newPlayer;
         RefreshHand();
+    }
+    
+    #endregion
+    
+    #region Event Handlers
+    
+    private void OnCardAddedToHand(CardSO card)
+    {
+        Debug.Log($"PlayerHandUI: Card {card.cardName} added to hand - refreshing UI immediately");
+        Debug.Log($"PlayerHandUI: Hand size before refresh: {player?.PlayerCards?.Hand?.Count ?? 0}");
+        
+        // Force immediate UI refresh with a slight delay to ensure data is updated
+        StartCoroutine(ForceRefreshHandCoroutine());
+    }
+    
+    private void OnCardPlayed(CardSO card)
+    {
+        Debug.Log($"PlayerHandUI: Card {card.cardName} played - refreshing UI immediately");
+        Debug.Log($"PlayerHandUI: Hand size before refresh: {player?.PlayerCards?.Hand?.Count ?? 0}");
+        
+        // Force immediate UI refresh with a slight delay to ensure data is updated
+        StartCoroutine(ForceRefreshHandCoroutine());
+    }
+    
+    private System.Collections.IEnumerator ForceRefreshHandCoroutine()
+    {
+        // Wait one frame to ensure all events have processed
+        yield return null;
+        
+        Debug.Log($"PlayerHandUI: Force refreshing hand. Current hand size: {player?.PlayerCards?.Hand?.Count ?? 0}");
+        RefreshHand();
+        
+        // Update the last hand count to prevent polling conflicts
+        if (player?.PlayerCards?.Hand != null)
+        {
+            lastHandCount = player.PlayerCards.Hand.Count;
+        }
+    }
+    
+    private void OnPathogenChanged(Pathogen pathogen)
+    {
+        UpdateCardBlocking();
+    }
+    
+    private void OnItemAddedToInventory(ItemSO item, int quantity)
+    {
+        Debug.Log($"PlayerHandUI: Item {item.cardName} (x{quantity}) added to inventory - refreshing UI immediately");
+        StartCoroutine(ForceRefreshHandCoroutine());
+    }
+    
+    private void OnItemRemovedFromInventory(ItemSO item, int quantity)
+    {
+        Debug.Log($"PlayerHandUI: Item {item.cardName} (x{quantity}) removed from inventory - refreshing UI immediately");
+        StartCoroutine(ForceRefreshHandCoroutine());
+    }
+    
+    private void OnItemUsedFromInventory(ItemSO item)
+    {
+        Debug.Log($"PlayerHandUI: Item {item.cardName} used from inventory - refreshing UI immediately");
+        StartCoroutine(ForceRefreshHandCoroutine());
     }
     
     #endregion

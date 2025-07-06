@@ -6,16 +6,28 @@ public class CytotoxicCellCardSO : CardSO
 {
     public override void ApplyEffect(Player player, List<CardSO> playedCards, Pathogen target)
     {
+        // Get GameManager for logging
+        var gameManager = FindFirstObjectByType<GameManager>();
+        
         // Check if Helper T-Cell is in play
         if (!HasHelperTCellInPlay(playedCards))
         {
             Debug.Log("Cytotoxic T-Cell needs Helper T-Cell to activate");
+            if (gameManager != null)
+                gameManager.LogCardEffect("Cytotoxic T-Cell", "needs Helper T-Cell to activate");
             return;
         }
         
         // Deal damage to pathogen
         CardEffects.DealDamage(target, 25);
         Debug.Log("Cytotoxic T-Cell activated by Helper T-Cell: 25 damage to pathogen");
+        
+        if (gameManager != null)
+        {
+            gameManager.LogCardEffect("Cytotoxic T-Cell", "activated by Helper T-Cell");
+            if (target != null)
+                gameManager.LogDamage("Player (Cytotoxic T-Cell)", target.GetPathogenName(), 25);
+        }
     }
     
     private bool HasHelperTCellInPlay(List<CardSO> playedCards)

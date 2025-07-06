@@ -211,6 +211,11 @@ public class PathogenManager : MonoBehaviour
         return GetActivePathogenCount() == 0 && pathogenQueue.Count == 0;
     }
     
+    public bool HasMorePathogens()
+    {
+        return pathogenQueue.Count > 0;
+    }
+    
     #endregion
 
     #region Debug Methods

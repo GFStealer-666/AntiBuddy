@@ -40,6 +40,13 @@ public class PathogenAttack
             player.TakeDamage(totalDamage);
             OnAttackExecuted?.Invoke(totalDamage);
             Debug.Log($"{pathogenData.PathogenName} attacks for {totalDamage} damage!");
+            
+            // Log the pathogen attack via GameManager
+            var gameManager = GameObject.FindFirstObjectByType<GameManager>();
+            if (gameManager != null)
+            {
+                gameManager.LogDamage(pathogenData.PathogenName, "Player", totalDamage);
+            }
         }
     }
     

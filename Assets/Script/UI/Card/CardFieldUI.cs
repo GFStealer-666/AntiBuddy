@@ -71,29 +71,9 @@ public class CardFieldUI : MonoBehaviour
 
         if (cardUI != null)
         {
-            // Initialize the card UI but make it completely non-interactive
+            // Initialize the card UI and set it for field display (non-interactive)
             cardUI.Initialize(card);
-            
-            // Disable the button completely to prevent clicking
-            Button cardButton = cardUIObj.GetComponent<Button>();
-            if (cardButton != null)
-            {
-                cardButton.interactable = false;
-                cardButton.enabled = false; // Completely disable button component
-            }
-            
-            // Remove all pointer event handlers to prevent hover effects
-            var pointerHandlers = cardUIObj.GetComponents<MonoBehaviour>();
-            foreach (var handler in pointerHandlers)
-            {
-                if (handler is IPointerEnterHandler || handler is IPointerExitHandler || handler is IPointerClickHandler)
-                {
-                    (handler as MonoBehaviour).enabled = false;
-                }
-            }
-            
-            // Set the card as blocked to prevent any hover effects in CardUI logic
-            cardUI.SetBlocked(true);
+            cardUI.SetAsFieldDisplay(); // This handles all the disabling properly
             
             // Position the card (optional - layout group can handle this too)
             RectTransform cardRect = cardUIObj.GetComponent<RectTransform>();

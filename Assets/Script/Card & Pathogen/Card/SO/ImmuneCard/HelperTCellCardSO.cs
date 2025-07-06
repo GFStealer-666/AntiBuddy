@@ -8,5 +8,10 @@ public class HelperTCellCardSO : CardSO
     {
         // Helper T-Cell just enables other cards - no direct effect
         Debug.Log("Helper T-Cell: Enabling combo cards");
+        
+        // Log the effect via GameManager
+        var gameManager = FindFirstObjectByType<GameManager>();
+        if (gameManager != null)
+            gameManager.LogCardEffect("Helper T-Cell", "enabled combo cards");
     }
 }

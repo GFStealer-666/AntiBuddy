@@ -11,6 +11,11 @@ public class VaccineItemSO : ItemSO
         
         player.ApplyVaccineBoost();
         
+        // Log the effect via GameManager
+        var gameManager = FindFirstObjectByType<GameManager>();
+        if (gameManager != null)
+            gameManager.LogCardEffect("Vaccine", "next card effect will be doubled");
+        
         Debug.Log("Vaccine: Ready to boost next card effect!");
     }
 }

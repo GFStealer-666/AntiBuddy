@@ -13,5 +13,10 @@ public class ImmunostimulantItemSO : ItemSO
         CardEffects.AddPercentageDefense(player, 100);
         
         Debug.Log("Immunostimulant: Player now has 100% defense until next turn!");
+        
+        // Log via GameManager
+        var gameManager = FindFirstObjectByType<GameManager>();
+        if (gameManager != null)
+            gameManager.LogCardEffect("Immunostimulant", "granted 100% defense until next turn");
     }
 }

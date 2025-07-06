@@ -34,5 +34,15 @@ public class WashHandsItemSO : ItemSO
         CardEffects.AddPercentageDefense(player, (int)defensePercentage);
         
         Debug.Log($"Wash Hands: Applied {defensePercentage}% defense until next turn");
+        
+        // Log via GameManager
+        var gameManager = FindFirstObjectByType<GameManager>();
+        if (gameManager != null)
+        {
+            string effectMsg = target != null ? 
+                $"applied {defensePercentage}% defense vs {target.GetPathogenName()}" : 
+                $"applied {defensePercentage}% general defense";
+            gameManager.LogCardEffect("Wash Hands", effectMsg);
+        }
     }
 }

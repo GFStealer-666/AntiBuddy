@@ -12,5 +12,10 @@ public class WearMaskItemSO : ItemSO
         CardEffects.AddPercentageDefense(player, 50);
         
         Debug.Log("Wear a Mask: Player now has 50% defense until next turn!");
+        
+        // Log via GameManager
+        var gameManager = FindFirstObjectByType<GameManager>();
+        if (gameManager != null)
+            gameManager.LogCardEffect("Wear a Mask", "applied 50% defense until next turn");
     }
 }

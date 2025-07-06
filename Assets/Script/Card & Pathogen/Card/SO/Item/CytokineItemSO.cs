@@ -33,5 +33,10 @@ public class CytokineItemSO : ItemSO
         {
             Debug.LogError("Cytokine: Could not find TurnManager or CardField");
         }
+        
+        // Log via GameManager
+        var gameManager = FindFirstObjectByType<GameManager>();
+        if (gameManager != null)
+            gameManager.LogCardEffect("Cytokine", "spawned Helper T Cell on field");
     }
 }

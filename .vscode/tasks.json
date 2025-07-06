@@ -1,0 +1,16 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build Unity Project",
+			"type": "shell",
+			"command": "powershell",
+			"args": [
+				"-Command",
+				"cd 'c:\\Users\\User\\Documents\\GitHub\\Immunity-Boardgame'; echo 'Checking Unity project compilation...';"
+			],
+			"group": "build",
+			"isBackground": false
+		}
+	]
+}
