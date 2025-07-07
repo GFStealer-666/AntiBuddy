@@ -14,7 +14,6 @@ public class LogMessage
     public int id;
     public string timestamp;
     public string message;
-    public string colorHex;
     public LogCategory category;
     public int turnNumber;
     public string additionalData; // For future expansion (JSON data, etc.)
@@ -24,7 +23,6 @@ public class LogMessage
         this.id = id;
         this.timestamp = System.DateTime.Now.ToString("HH:mm:ss");
         this.message = message;
-        this.colorHex = ColorUtility.ToHtmlStringRGB(color);
         this.category = category;
         this.turnNumber = turn;
         this.additionalData = "";
@@ -80,12 +78,6 @@ public class GameLogUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI logText;
     
     [Header("Colors")]
-    [SerializeField] private Color playerActionColor = Color.cyan;
-    [SerializeField] private Color enemyActionColor = Color.red;
-    [SerializeField] private Color systemColor = Color.yellow;
-    [SerializeField] private Color damageColor = Color.orange;
-    [SerializeField] private Color healColor = Color.green;
-    
     // Singleton for easy access
     public static GameLogUI Instance { get; private set; }
     
@@ -111,7 +103,7 @@ public class GameLogUI : MonoBehaviour
     void Start()
     {
         // Show initial message
-        ShowMessage("Game Started", systemColor);
+        ShowMessage("Game Started");
     }
     
     void OnDestroy()
@@ -190,13 +182,13 @@ public class GameLogUI : MonoBehaviour
         switch (phase)
         {
             case TurnPhase.PlayerTurn:
-                ShowMessage("Player turn started", playerActionColor);
+                ShowMessage("Player turn started");
                 break;
             case TurnPhase.PathogenTurn:
-                ShowMessage("Pathogen turn started", enemyActionColor);
+                ShowMessage("Pathogen turn started");
                 break;
             case TurnPhase.GameOver:
-                ShowMessage("GAME OVER", systemColor);
+                ShowMessage("GAME OVER");
                 break;
         }
     }
@@ -224,22 +216,22 @@ public class GameLogUI : MonoBehaviour
             damageInfo = " (provides defense, no damage)";
         }
         
-        ShowMessage($"Player used {card.cardName}{cardType}{damageInfo}", playerActionColor);
+        ShowMessage($"Player used {card.cardName}{cardType}{damageInfo}");
     }
     
     private void OnPlayerHealed(int healAmount)
     {
-        ShowMessage($"Player healed for {healAmount} HP", healColor);
+        ShowMessage($"Player healed for {healAmount} HP");
     }
     
     private void OnPathogenSpawned(Pathogen pathogen)
     {
-        ShowMessage($"New pathogen appeared: {pathogen.GetPathogenName()}", enemyActionColor);
+        ShowMessage($"New pathogen appeared: {pathogen.GetPathogenName()}");
     }
     
     private void OnPathogenDefeated(Pathogen pathogen)
     {
-        ShowMessage($"Pathogen defeated: {pathogen.GetPathogenName()}", playerActionColor);
+        ShowMessage($"Pathogen defeated: {pathogen.GetPathogenName()}");
     }
     
     #endregion
@@ -294,7 +286,7 @@ public class GameLogUI : MonoBehaviour
     /// </summary>
     public void LogDamage(string attacker, string target, int damage)
     {
-        ShowMessage($"{attacker} dealt {damage} damage to {target}", damageColor);
+        ShowMessage($"{attacker} dealt {damage} damage to {target}");
     }
     
     /// <summary>
@@ -302,7 +294,7 @@ public class GameLogUI : MonoBehaviour
     /// </summary>
     public void LogHealing(string target, int healAmount)
     {
-        ShowMessage($"{target} healed for {healAmount} HP", healColor);
+        ShowMessage($"{target} healed for {healAmount} HP");
     }
     
     /// <summary>
@@ -310,7 +302,7 @@ public class GameLogUI : MonoBehaviour
     /// </summary>
     public void LogItemUse(string itemName)
     {
-        ShowMessage($"Player used {itemName}", playerActionColor);
+        ShowMessage($"Player used {itemName}");
     }
     
     /// <summary>
@@ -318,7 +310,7 @@ public class GameLogUI : MonoBehaviour
     /// </summary>
     public void LogItemPurchase(string purchaseMessage)
     {
-        ShowMessage($"Player purchased {purchaseMessage}", playerActionColor);
+        ShowMessage($"Player purchased {purchaseMessage}");
     }
     
     /// <summary>

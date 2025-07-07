@@ -12,6 +12,7 @@ public class Player
 
     // Temporary effect flags
     public bool HasVaccineBoost { get; private set; } = false;
+    private bool isVaccineBoostActive = false; // Used during card effect application
 
     public Player(int startingHP)
     {
@@ -63,12 +64,24 @@ public class Player
     public void ConsumeVaccineBoost()
     {
         HasVaccineBoost = false;
+        isVaccineBoostActive = false;
         Debug.Log("Player: Vaccine boost consumed");
+    }
+
+    public void SetVaccineBoostActive(bool active)
+    {
+        isVaccineBoostActive = active;
+    }
+
+    public bool IsVaccineBoostActive()
+    {
+        return isVaccineBoostActive;
     }
 
     public void ResetTemporaryEffects()
     {
         HasVaccineBoost = false;
+        isVaccineBoostActive = false;
         PlayerDefense.ResetDefense();
         Debug.Log("Player: All temporary effects reset for new turn");
     }

@@ -45,18 +45,23 @@ public class PlayerCards
             // Check if vaccine boost is active (double effect)
             bool hasVaccineBoost = player.HasVaccineBoost;
             
-            // Apply card effect
+            if (hasVaccineBoost && !(card is ItemSO))
+            {
+                Debug.Log($"Vaccine Boost: Activating double effect for {card.cardName}!");
+                // Set the boost flag before applying effect so cards can check it
+                player.SetVaccineBoostActive(true);
+            }
+            
+            // Apply card effect (cards will check for boost and double their own effects)
             Debug.Log($"PlayerCards: Applying effect for {card.cardName}");
             card.ApplyEffect(player, PlayedCards, target);
             Debug.Log($"PlayerCards: Effect applied. Hand size after effect: {Hand.Count}");
             
-            // If vaccine boost was active, apply effect again
+            // Consume boost after use
             if (hasVaccineBoost && !(card is ItemSO))
             {
-                Debug.Log($"Vaccine Boost: Doubling effect of {card.cardName}!");
-                card.ApplyEffect(player, PlayedCards, target);
-                player.ConsumeVaccineBoost(); // Remove boost after use
-                Debug.Log($"PlayerCards: Double effect applied. Final hand size: {Hand.Count}");
+                player.ConsumeVaccineBoost();
+                Debug.Log($"Vaccine Boost: Effect doubled and boost consumed for {card.cardName}");
             }
             
             Debug.Log($"PlayerCards: Firing OnCardPlayed event for {card.cardName}");
@@ -75,6 +80,52 @@ public class PlayerCards
 
     public void ResetTurnStats()
     {
+        // Reset activation flags for combo cards
+        foreach (var card in PlayedCards)
+        {
+            if (card is BCellCardSO bCell)
+                bCell.ResetActivation();
+            else if (card is CytotoxicCellCardSO cytotoxic)
+                cytotoxic.ResetActivation();
+        }
+        
         PlayedCards.Clear();
+        Debug.Log("PlayerCards: Cleared played cards and reset combo activations for new turn");
+    }
+
+    /// <summary>
+    /// Process all card effects at end of turn with proper combo resolution
+    /// Call this after all cards have been played in a turn
+    /// </summary>
+    public void ProcessAllCardEffects(Player player, Pathogen target)
+    {
+        if (PlayedCards.Count == 0) return;
+
+        Debug.Log($"PlayerCards: Processing {PlayedCards.Count} card effects");
+
+        // Two-pass system for combo effects
+        // Pass 1: Non-combo cards (Helper T-Cell, Macrophage, Natural Killer)
+        foreach (var card in PlayedCards)
+        {
+            if (card is HelperTCellCardSO || card is MacrophageCardSO || card is NaturalKillerCardSO)
+            {
+                Debug.Log($"PlayerCards: Processing non-combo card: {card.cardName}");
+                // These effects were already applied when played, skip re-processing
+            }
+        }
+
+        // Pass 2: Combo-dependent cards (B-Cell, Cytotoxic) 
+        // Re-process these to ensure they can find Helper T-Cell
+        foreach (var card in PlayedCards)
+        {
+            if (card is BCellCardSO || card is CytotoxicCellCardSO)
+            {
+                Debug.Log($"PlayerCards: Re-processing combo card: {card.cardName}");
+                // Re-apply effect now that all cards are in PlayedCards
+                card.ApplyEffect(player, PlayedCards, target);
+            }
+        }
+
+        Debug.Log("PlayerCards: All card effects processed");
     }
 }

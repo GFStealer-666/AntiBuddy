@@ -26,6 +26,9 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
     {
         InitializeComponents();
         RefreshHand();
+        
+        // Subscribe to card limit changes
+        TurnManager.OnCardLimitChanged += OnCardLimitChanged;
     }
     
     void Update()
@@ -41,6 +44,9 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
     void OnDestroy()
     {
         UnsubscribeFromEvents();
+        
+        // Unsubscribe from card limit changes
+        TurnManager.OnCardLimitChanged -= OnCardLimitChanged;
     }
     
     #endregion
@@ -183,6 +189,9 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
         
         // Update blocking status after creating all cards
         UpdateCardBlocking();
+        
+        // Update interactability based on card limits
+        UpdateCardInteractability();
     }
     
     private void ClearCardUIs()
@@ -250,6 +259,33 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
         }
     }
     
+    /// <summary>
+    /// Update card interactability based on card limit and other conditions
+    /// </summary>
+    private void UpdateCardInteractability()
+    {
+        if (turnManager == null) return;
+        
+        bool canPlayMoreCards = turnManager.CanPlayMoreCards();
+        
+        // Update each card UI for interactability
+        foreach (GameObject cardObj in currentCardObjects)
+        {
+            CardUI cardUI = cardObj.GetComponent<CardUI>();
+            if (cardUI == null || cardUI.GetCardData() == null) continue;
+            
+            bool isItem = cardUI.GetCardData() is ItemSO;
+            bool canPlay = isItem || canPlayMoreCards; // Items can always be played
+            
+            // Use the button component to control interactability
+            var button = cardObj.GetComponent<UnityEngine.UI.Button>();
+            if (button != null)
+            {
+                button.interactable = canPlay && !cardUI.IsBlocked();
+            }
+        }
+    }
+
     private bool IsCardBlockedByAnyPathogen(CardSO card, List<Pathogen> pathogens)
     {
         System.Type cardType = card.GetType();
@@ -394,23 +430,17 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
         UpdateCardBlocking();
     }
     
-    private void OnItemAddedToInventory(ItemSO item, int quantity)
+    private void OnCardLimitChanged(int cardsPlayed, int cardLimit)
     {
-        Debug.Log($"PlayerHandUI: Item {item.cardName} (x{quantity}) added to inventory - refreshing UI immediately");
-        StartCoroutine(ForceRefreshHandCoroutine());
+        // Update card interactability based on card limit
+        UpdateCardInteractability();
+        Debug.Log($"PlayerHandUI: Card limit status - {cardsPlayed}/{cardLimit}");
     }
     
-    private void OnItemRemovedFromInventory(ItemSO item, int quantity)
-    {
-        Debug.Log($"PlayerHandUI: Item {item.cardName} (x{quantity}) removed from inventory - refreshing UI immediately");
-        StartCoroutine(ForceRefreshHandCoroutine());
-    }
-    
-    private void OnItemUsedFromInventory(ItemSO item)
-    {
-        Debug.Log($"PlayerHandUI: Item {item.cardName} used from inventory - refreshing UI immediately");
-        StartCoroutine(ForceRefreshHandCoroutine());
-    }
+    // Placeholder inventory event handlers (to be implemented when inventory events are available)
+    private void OnItemAddedToInventory(ItemSO item, int quantity) { RefreshHand(); }
+    private void OnItemRemovedFromInventory(ItemSO item, int quantity) { RefreshHand(); }
+    private void OnItemUsedFromInventory(ItemSO item) { RefreshHand(); }
     
     #endregion
 }

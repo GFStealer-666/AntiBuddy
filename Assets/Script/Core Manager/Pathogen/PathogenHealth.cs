@@ -24,10 +24,16 @@ public class PathogenHealth
         int actualDamage = Mathf.Min(damage, pathogenData.currentHitPoints);
         pathogenData.currentHitPoints -= actualDamage;
         
+        // Play damage sound
+        PlayPathogenDamageAudio(pathogenData.PathogenName, actualDamage);
+        
         if (pathogenData.currentHitPoints <= 0)
         {
             pathogenData.currentHitPoints = 0;
             pathogenData.isAlive = false;
+            
+            // Play death sound
+            PlayPathogenDeathAudio(pathogenData.PathogenName);
             OnPathogenDied?.Invoke();
         }
         
@@ -48,6 +54,9 @@ public class PathogenHealth
         
         if (actualHealing > 0)
         {
+            // Play heal sound
+            PlayPathogenHealAudio(pathogenData.PathogenName, actualHealing);
+            
             OnHealthChanged?.Invoke(pathogenData.currentHitPoints);
             Debug.Log($"{pathogenData.PathogenName} healed for {actualHealing} HP. Current HP: {pathogenData.currentHitPoints}/{pathogenData.MaxHitPoints}");
         }
@@ -72,4 +81,71 @@ public class PathogenHealth
     {
         return pathogenData.GetHealthPercentage();
     }
+    
+    #region Audio Methods
+    
+    private void PlayPathogenDamageAudio(string pathogenName, int damage)
+    {
+        try
+        {
+            var audioHelperType = System.Type.GetType("AudioHelper");
+            if (audioHelperType != null)
+            {
+                var method = audioHelperType.GetMethod("PlayPathogenDamageSound");
+                method?.Invoke(null, new object[] { pathogenName, damage });
+            }
+            else
+            {
+                Debug.Log($"[AUDIO] Pathogen {pathogenName} took {damage} damage - play damage sound");
+            }
+        }
+        catch (System.Exception)
+        {
+            Debug.Log($"[AUDIO] Pathogen {pathogenName} took {damage} damage - play damage sound");
+        }
+    }
+    
+    private void PlayPathogenDeathAudio(string pathogenName)
+    {
+        try
+        {
+            var audioHelperType = System.Type.GetType("AudioHelper");
+            if (audioHelperType != null)
+            {
+                var method = audioHelperType.GetMethod("PlayPathogenDeathSound");
+                method?.Invoke(null, new object[] { pathogenName });
+            }
+            else
+            {
+                Debug.Log($"[AUDIO] Pathogen {pathogenName} died - play death sound");
+            }
+        }
+        catch (System.Exception)
+        {
+            Debug.Log($"[AUDIO] Pathogen {pathogenName} died - play death sound");
+        }
+    }
+    
+    private void PlayPathogenHealAudio(string pathogenName, int healAmount)
+    {
+        try
+        {
+            var audioHelperType = System.Type.GetType("AudioHelper");
+            if (audioHelperType != null)
+            {
+                var method = audioHelperType.GetMethod("PlayPathogenHealSound");
+                method?.Invoke(null, new object[] { pathogenName, healAmount });
+            }
+            else
+            {
+                Debug.Log($"[AUDIO] Pathogen {pathogenName} healed {healAmount} HP - play heal sound");
+            }
+        }
+        catch (System.Exception)
+        {
+            Debug.Log($"[AUDIO] Pathogen {pathogenName} healed {healAmount} HP - play heal sound");
+        }
+    }
+    
+    #endregion
 }

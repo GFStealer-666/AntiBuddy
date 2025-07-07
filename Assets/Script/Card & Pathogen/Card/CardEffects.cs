@@ -5,6 +5,59 @@ public static class CardEffects
 {
     // Common card effects that can be used by multiple cards
     
+    #region Vaccine Boost Helpers
+    
+    /// <summary>
+    /// Apply a numerical effect with vaccine boost consideration
+    /// </summary>
+    private static int ApplyVaccineBoost(Player player, int baseValue)
+    {
+        if (player.IsVaccineBoostActive())
+        {
+            Debug.Log($"Vaccine Boost: Doubling effect from {baseValue} to {baseValue * 2}");
+            return baseValue * 2;
+        }
+        return baseValue;
+    }
+    
+    #endregion
+    
+    #region Enhanced Card Effects (Vaccine Boost Compatible)
+    
+    public static void DealDamageWithBoost(Player player, Pathogen target, int damage)
+    {
+        int finalDamage = ApplyVaccineBoost(player, damage);
+        DealDamage(target, finalDamage);
+    }
+    
+    public static void HealPlayerWithBoost(Player player, int amount)
+    {
+        int finalAmount = ApplyVaccineBoost(player, amount);
+        HealPlayer(player, finalAmount);
+    }
+    
+    public static void AddDefenseWithBoost(Player player, int amount)
+    {
+        int finalAmount = ApplyVaccineBoost(player, amount);
+        AddDefense(player, finalAmount);
+    }
+    
+    public static void AddPercentageDefenseWithBoost(Player player, int percentage)
+    {
+        int finalPercentage = ApplyVaccineBoost(player, percentage);
+        AddPercentageDefense(player, finalPercentage);
+    }
+    
+    public static void AddTokensWithBoost(Player player, int amount)
+    {
+        int finalAmount = ApplyVaccineBoost(player, amount);
+        AddTokens(player, finalAmount);
+    }
+    
+    #endregion
+    
+    #region Original Effects (For Backwards Compatibility)
+    
     public static void DealDamage(Pathogen target, int damage)
     {
         if (target != null && target.GetMaxHealth() > 0)
@@ -79,4 +132,5 @@ public static class CardEffects
     {
         return CountCardType<T>(cards) > 0;
     }
+    #endregion
 }

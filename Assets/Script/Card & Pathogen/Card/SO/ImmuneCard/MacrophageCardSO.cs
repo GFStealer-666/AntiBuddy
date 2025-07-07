@@ -14,16 +14,18 @@ public class MacrophageCardSO : CardSO
         // Get GameManager for logging
         var gameManager = FindFirstObjectByType<GameManager>();
         
-        // Simple, direct effects - no complex activation logic
-        CardEffects.AddPercentageDefense(player, 25);
+        // Simple, direct effects - no complex activation logic (vaccine boost compatible)
+        CardEffects.AddPercentageDefenseWithBoost(player, 25);
+        int finalDefense = player.IsVaccineBoostActive() ? 50 : 25;
         if (gameManager != null)
-            gameManager.LogCardEffect("Macrophage", "gained 25% defense");
+            gameManager.LogCardEffect("Macrophage", $"gained {finalDefense}% defense{(player.IsVaccineBoostActive() ? " (boosted)" : "")}");
         
-        CardEffects.DealDamage(target, 5);
+        CardEffects.DealDamageWithBoost(player, target, 5);
+        int finalDamage = player.IsVaccineBoostActive() ? 10 : 5;
         if (gameManager != null && target != null)
-            gameManager.LogDamage("Player (Macrophage)", target.GetPathogenName(), 5);
+            gameManager.LogDamage("Player (Macrophage)", target.GetPathogenName(), finalDamage);
         
-        // Add Helper T-Cell to hand
+        // Add Helper T-Cell to hand (cards added to hand are not doubled by vaccine)
         if (helperTCellReward != null)
         {
             Debug.Log($"Macrophage: Adding {helperTCellReward.cardName} to hand");
@@ -35,6 +37,8 @@ public class MacrophageCardSO : CardSO
             Debug.LogWarning("Macrophage: helperTCellReward is null!");
         }
         
-        Debug.Log("Macrophage: 25% defense, 5 damage, +1 Helper T-Cell to hand");
+        int finalDefenseForLog = player.IsVaccineBoostActive() ? 50 : 25;
+        int finalDamageForLog = player.IsVaccineBoostActive() ? 10 : 5;
+        Debug.Log($"Macrophage: {finalDefenseForLog}% defense, {finalDamageForLog} damage, +1 Helper T-Cell to hand{(player.IsVaccineBoostActive() ? " (BOOSTED!)" : "")}");
     }
 }

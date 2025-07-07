@@ -37,6 +37,7 @@ public class TurnManager : MonoBehaviour
     public static event Action<TurnPhase> OnTurnPhaseChanged;
     public static event Action<int> OnTurnNumberChanged;
     public static event Action<PlayerStats> OnPlayerStatsChanged;
+    public static event Action<int, int> OnCardLimitChanged; // cardsPlayed, cardLimit
 
     void Start()
     {
@@ -169,6 +170,7 @@ public class TurnManager : MonoBehaviour
         
         OnTurnPhaseChanged?.Invoke(currentPhase);
         OnPlayerStatsChanged?.Invoke(playerManager.GetPlayerStats());
+        OnCardLimitChanged?.Invoke(cardsPlayedThisTurn, cardsPerTurn); // Notify UI of card limit status
         
         isProcessingTurn = false;
     }
@@ -385,8 +387,7 @@ public class TurnManager : MonoBehaviour
         if (!isItem && cardsPlayedThisTurn >= cardsPerTurn)
         {
             Debug.LogWarning($"Cannot play more cards this turn. Limit: {cardsPerTurn} (Items don't count toward limit)");
-            // Auto-end turn when limit reached
-            EndPlayerTurn("card limit reached");
+            // Don't auto-end turn - let player decide when to end
             return false;
         }
         
@@ -435,13 +436,9 @@ public class TurnManager : MonoBehaviour
             else
             {
                 Debug.Log($"Cards played this turn: {cardsPlayedThisTurn}/{cardsPerTurn}");
-            }
-            
-            // Auto-end turn if player has played maximum cards (only count non-items)
-            if (!isItem && cardsPlayedThisTurn >= cardsPerTurn)
-            {
-                Debug.Log("Maximum cards played, ending turn automatically");
-                EndPlayerTurn("card limit reached");
+                
+                // Notify UI that card limit status has changed
+                OnCardLimitChanged?.Invoke(cardsPlayedThisTurn, cardsPerTurn);
             }
         }
         return success;
@@ -471,6 +468,34 @@ public class TurnManager : MonoBehaviour
         {
             EndGame(false); // Player loses
         }
+    }
+
+    /// <summary>
+    /// Process combo effects at end of turn to ensure proper activation regardless of play order
+    /// </summary>
+    private void ProcessEndOfTurnCombos()
+    {
+        if (playerManager == null) return;
+        
+        var playedCards = playerManager.GetPlayedCards();
+        if (playedCards.Count == 0) return;
+        
+        Debug.Log($"TurnManager: Processing end-of-turn combos for {playedCards.Count} cards");
+        
+        // Re-process combo cards now that all cards are in the played list
+        var currentTarget = pathogenManager?.GetCurrentPathogen();
+        
+        foreach (var card in playedCards)
+        {
+            // Only re-process combo cards that need Helper T-Cell
+            if (card is BCellCardSO || card is CytotoxicCellCardSO)
+            {
+                Debug.Log($"TurnManager: Re-processing combo card: {card.cardName}");
+                card.ApplyEffect(playerManager.GetPlayer(), playedCards, currentTarget);
+            }
+        }
+        
+        Debug.Log("TurnManager: End-of-turn combo processing complete");
     }
 
     /// <summary>
@@ -576,6 +601,12 @@ public class TurnManager : MonoBehaviour
     public PlayerManager GetPlayerManager() => playerManager;
     public PathogenManager GetPathogenManager() => pathogenManager;
     public List<CardSO> GetPlayerHand() => playerManager?.GetPlayerHand() ?? new List<CardSO>();
+    
+    // Card limit status methods
+    public bool CanPlayMoreCards() => cardsPlayedThisTurn < cardsPerTurn;
+    public int GetCardsPlayedThisTurn() => cardsPlayedThisTurn;
+    public int GetCardLimit() => cardsPerTurn;
+    public int GetRemainingCardPlays() => Mathf.Max(0, cardsPerTurn - cardsPlayedThisTurn);
 
     private void OnDestroy()
     {
