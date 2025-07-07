@@ -39,4 +39,6 @@ public class PlayerUI : MonoBehaviour
         player = newPlayer;
         SetPlayerForAllComponents();
     }
+
+    public PlayerHandUI HandUI => handUI;
 }

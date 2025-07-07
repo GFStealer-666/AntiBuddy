@@ -49,7 +49,6 @@ public class TurnManager : MonoBehaviour
         if (gameStateManager != null && gameStateManager.IsGameInProgress() && !isProcessingTurn)
         {
             HandleTurnTimer();
-            HandleInput();
         }
     }
 
@@ -64,6 +63,8 @@ public class TurnManager : MonoBehaviour
             GameObject playerManagerObj = new GameObject("PlayerManager");
             playerManager = playerManagerObj.AddComponent<PlayerManager>();
         }
+        
+        Debug.Log(playerManager == null ? "TurnManager: Created new PlayerManager" : "TurnManager: Found existing PlayerManager");
         
         // Subscribe to player death event for immediate game over check
         if (playerManager != null && playerManager.GetPlayer() != null)
@@ -100,6 +101,8 @@ public class TurnManager : MonoBehaviour
         cardsPlayedThisTurn = 0;
         
         StartPlayerTurn();
+        
+        Debug.Log(playerManager != null ? "TurnManager: PlayerManager reference is valid" : "TurnManager: PlayerManager reference is null");
     }
 
     void HandleTurnTimer()
@@ -115,27 +118,6 @@ public class TurnManager : MonoBehaviour
         }
     }
 
-    void HandleInput()
-    {
-        // if (currentPhase == TurnPhase.PlayerTurn)
-        // {
-        //     // Example input handling - in a real game this would be handled by UI
-        //     if (Input.GetKeyDown(KeyCode.D))
-        //     {
-        //         DrawCard();
-        //     }
-            
-        //     if (Input.GetKeyDown(KeyCode.H))
-        //     {
-        //         HealPlayer();
-        //     }
-            
-        //     if (Input.GetKeyDown(KeyCode.Return))
-        //     {
-        //         EndPlayerTurn();
-        //     }
-        // }
-    }
 
     public void StartPlayerTurn()
     {
@@ -444,6 +426,47 @@ public class TurnManager : MonoBehaviour
         return success;
     }
 
+    public void PlayCard(CardSO card)
+    {
+        if (card == null)
+        {
+            Debug.LogWarning("TurnManager: Cannot play a null card");
+            return;
+        }
+
+        Debug.Log($"TurnManager: Attempting to play card {card.cardName}");
+
+        // Try to add the card to the field
+        var cardField = FindFirstObjectByType<CardField>();
+        if (cardField != null)
+        {
+            bool success = cardField.TryPlayCardToField(card);
+            if (success)
+            {
+                Debug.Log($"TurnManager: Successfully played {card.cardName} to the field");
+
+                // Refresh PlayerHandUI
+                var playerUI = FindFirstObjectByType<PlayerUI>();
+                if (playerUI != null && playerUI.HandUI != null)
+                {
+                    playerUI.HandUI.RefreshHand();
+                }
+                else
+                {
+                    Debug.LogWarning("TurnManager: PlayerUI or PlayerHandUI not found");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"TurnManager: Failed to play {card.cardName} to the field");
+            }
+        }
+        else
+        {
+            Debug.LogError("TurnManager: CardField not found");
+        }
+    }
+    
     private bool ShouldCardStayInField(CardSO card)
     {
         // Items don't stay in field - they have immediate effects
@@ -635,5 +658,19 @@ public class TurnManager : MonoBehaviour
         CancelInvoke(nameof(DelayedPathogenActions));
         CancelInvoke(nameof(DelayedEndPathogenTurn));
         Debug.Log("TurnManager: Cancelled all delayed turn transitions");
+    }
+    
+    /// <summary>
+    /// Notify the system that a card has been played.
+    /// </summary>
+    /// <param name="card">The card that was played.</param>
+    public void NotifyCardPlayed(CardSO card)
+    {
+        if (cardField != null)
+        {
+            cardField.TryPlayCardToField(card);
+        }
+
+        Debug.Log($"TurnManager: Notified that {card.cardName} was played.");
     }
 }

@@ -70,7 +70,7 @@ public class PlayerInventoryInspector : MonoBehaviour
             RefreshInventoryDisplay();
         }
     }
-    
+
     [ContextMenu("Refresh Inventory Display")]
     public void RefreshInventoryDisplay()
     {
@@ -79,13 +79,13 @@ public class PlayerInventoryInspector : MonoBehaviour
             RefreshPlayerReference();
             if (player == null) return;
         }
-        
+
         // Update player stats
         currentHP = player.HP;
         maxHP = player.MaxHP;
         currentTokens = player.Tokens;
         currentDefense = player.Defense;
-        
+
         // Update inventory display
         inventoryItems.Clear();
         foreach (var slot in player.PlayerInventory.Items)
@@ -100,15 +100,9 @@ public class PlayerInventoryInspector : MonoBehaviour
                 maxStack = slot.item.maxStack
             });
         }
-        
+
         // Update hand display
         handCards.Clear();
-        foreach (var card in player.Hand)
-        {
-            // handCards.Add($"{card.cardName} (Cost: {card.}t/{card.hpCost}hp)");
-        }
-        
-        Debug.Log($"PlayerInventoryInspector: Refreshed - HP: {currentHP}/{maxHP}, Tokens: {currentTokens}, Inventory: {inventoryItems.Count} items, Hand: {handCards.Count} cards");
     }
     
     public Player GetPlayer()

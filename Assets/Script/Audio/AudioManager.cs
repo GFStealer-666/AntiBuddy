@@ -6,15 +6,10 @@ public class DamageAudioClips
 {
     [Header("Player Damage Sounds")]
     public AudioClip[] playerDamageSounds;
-    public AudioClip playerDeathSound;
     
     [Header("Pathogen Damage Sounds")]
     public AudioClip[] pathogenDamageSounds;
-    public AudioClip pathogenDeathSound;
-    
-    [Header("Healing Sounds")]
-    public AudioClip playerHealSound;
-    public AudioClip pathogenHealSound;
+
 }
 
 /// <summary>
@@ -38,7 +33,6 @@ public class AudioManager : MonoBehaviour
     [Header("Audio Sources")]
     [SerializeField] private AudioSource playerAudioSource;
     [SerializeField] private AudioSource pathogenAudioSource;
-    [SerializeField] private AudioSource uiAudioSource;
     
     [Header("Audio Clips")]
     [SerializeField] private DamageAudioClips damageClips;
@@ -52,6 +46,11 @@ public class AudioManager : MonoBehaviour
     [Header("Pitch Variation")]
     [Range(0f, 0.5f)] public float pitchVariation = 0f;
     
+    [Header("Background Music")]
+    [SerializeField] private AudioSource bgmAudioSource;
+    [SerializeField] private AudioClip defaultBGM;
+    [SerializeField] private AudioClip victoryBGM;
+    [SerializeField] private AudioClip defeatBGM;
     private static AudioManager instance;
     public static AudioManager Instance
     {
@@ -69,9 +68,19 @@ public class AudioManager : MonoBehaviour
             return instance;
         }
     }
-    
+    void OnEnable()
+    {
+        TurnManager.OnTurnPhaseChanged += OnTurnPhaseChanged;
+        
+    }
+    void OnDisable()
+    {
+        TurnManager.OnTurnPhaseChanged -= OnTurnPhaseChanged;
+    }
+
     void Awake()
     {
+        PlayDefaultBGM();
         if (instance == null)
         {
             instance = this;
@@ -83,6 +92,27 @@ public class AudioManager : MonoBehaviour
             Destroy(gameObject);
         }
     }
+    private void OnTurnPhaseChanged(TurnPhase phase)
+    {
+        Debug.Log("AudioManager: Entering OnTurnPhaseChanged method");
+        
+        if(phase == TurnPhase.GameOver)
+        {
+            // Handle game over phase
+            GameStateManager gameState = GameStateManager.Instance;
+            Debug.Log($"AudioManager: Current game state = {gameState?.GetCurrentState()}");
+            
+            if (gameState != null && gameState.GetCurrentState() == GameState.Victory)
+            {
+                PlayVictoryBGM();
+            }
+            else
+            {
+                PlayDefeatBGM();
+            }
+        }
+        Debug.Log($"AudioManager: Turn phase changed to {phase}");
+    }
     
     private void InitializeAudioSources()
     {
@@ -91,15 +121,16 @@ public class AudioManager : MonoBehaviour
         {
             playerAudioSource = CreateAudioSource("PlayerAudioSource");
         }
-        
+
         if (pathogenAudioSource == null)
         {
             pathogenAudioSource = CreateAudioSource("PathogenAudioSource");
         }
-        
-        if (uiAudioSource == null)
+
+
+        if (bgmAudioSource == null)
         {
-            uiAudioSource = CreateAudioSource("UIAudioSource");
+            bgmAudioSource = CreateAudioSource("BGMAudioSource");
         }
     }
     
@@ -116,9 +147,12 @@ public class AudioManager : MonoBehaviour
         
         return source;
     }
-    
+    void Start()
+    {
+        PlayDefaultBGM();
+    }
     #region Player Damage Audio
-    
+
     public void PlayPlayerDamageSound(int damage)
     {
         if (damageClips.playerDamageSounds == null || damageClips.playerDamageSounds.Length == 0)
@@ -135,23 +169,7 @@ public class AudioManager : MonoBehaviour
         Debug.Log($"AudioManager: Playing player damage sound for {damage} damage");
     }
     
-    public void PlayPlayerDeathSound()
-    {
-        if (damageClips.playerDeathSound != null)
-        {
-            PlayAudioClip(playerAudioSource, damageClips.playerDeathSound, playerDamageVolume, false);
-            Debug.Log("AudioManager: Playing player death sound");
-        }
-    }
-    
-    public void PlayPlayerHealSound(int healAmount)
-    {
-        if (damageClips.playerHealSound != null)
-        {
-            PlayAudioClip(playerAudioSource, damageClips.playerHealSound, healingVolume);
-            Debug.Log($"AudioManager: Playing player heal sound for {healAmount} HP");
-        }
-    }
+
     
     #endregion
     
@@ -171,24 +189,6 @@ public class AudioManager : MonoBehaviour
         PlayAudioClip(pathogenAudioSource, clip, pathogenDamageVolume);
         
         Debug.Log($"AudioManager: Playing pathogen damage sound for {pathogenName} taking {damage} damage");
-    }
-    
-    public void PlayPathogenDeathSound(string pathogenName)
-    {
-        if (damageClips.pathogenDeathSound != null)
-        {
-            PlayAudioClip(pathogenAudioSource, damageClips.pathogenDeathSound, pathogenDamageVolume, false);
-            Debug.Log($"AudioManager: Playing pathogen death sound for {pathogenName}");
-        }
-    }
-    
-    public void PlayPathogenHealSound(string pathogenName, int healAmount)
-    {
-        if (damageClips.pathogenHealSound != null)
-        {
-            PlayAudioClip(pathogenAudioSource, damageClips.pathogenHealSound, healingVolume);
-            Debug.Log($"AudioManager: Playing pathogen heal sound for {pathogenName} healing {healAmount} HP");
-        }
     }
     
     #endregion
@@ -240,7 +240,7 @@ public class AudioManager : MonoBehaviour
     {
         if (playerAudioSource != null) playerAudioSource.volume = masterVolume;
         if (pathogenAudioSource != null) pathogenAudioSource.volume = masterVolume;
-        if (uiAudioSource != null) uiAudioSource.volume = masterVolume;
+        if (bgmAudioSource != null) bgmAudioSource.volume = masterVolume;
     }
     
     #endregion
@@ -259,11 +259,35 @@ public class AudioManager : MonoBehaviour
         PlayPathogenDamageSound("Test Pathogen", 15);
     }
     
-    [ContextMenu("Test Player Heal Sound")]
-    public void TestPlayerHealSound()
+
+    #endregion
+
+    #region Background Music
+
+    public void PlayDefaultBGM()
     {
-        PlayPlayerHealSound(20);
+        PlayBGM(defaultBGM);
     }
-    
+
+    public void PlayVictoryBGM()
+    {
+        PlayBGM(victoryBGM);
+    }
+
+    public void PlayDefeatBGM()
+    {
+        PlayBGM(defeatBGM);
+    }
+
+    private void PlayBGM(AudioClip bgmClip)
+    {
+        if (bgmAudioSource == null || bgmClip == null) return;
+
+        bgmAudioSource.clip = bgmClip;
+        bgmAudioSource.volume = masterVolume;
+        bgmAudioSource.loop = true;
+        bgmAudioSource.Play();
+    }
+
     #endregion
 }

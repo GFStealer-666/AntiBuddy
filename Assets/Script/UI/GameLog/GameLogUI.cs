@@ -205,7 +205,7 @@ public class GameLogUI : MonoBehaviour
         }
         else if (card is CytotoxicCellCardSO)
         {
-            damageInfo = " and dealt 25 damage";
+            damageInfo = "";
         }
         else if (card is NaturalKillerCardSO)
         {
@@ -213,7 +213,7 @@ public class GameLogUI : MonoBehaviour
         }
         else if (card is BCellCardSO)
         {
-            damageInfo = " (provides defense, no damage)";
+            damageInfo = "provides defense, no damage";
         }
         
         ShowMessage($"Player used {card.cardName}{cardType}{damageInfo}");
@@ -323,6 +323,22 @@ public class GameLogUI : MonoBehaviour
         {
             logText.text = "";
         }
+    }
+    
+    /// <summary>
+    /// Log a victory message.
+    /// </summary>
+    public void LogVictory()
+    {
+        ShowMessage("Victory achieved!", Color.green);
+    }
+    
+    /// <summary>
+    /// Log a defeat message.
+    /// </summary>
+    public void LogDefeat()
+    {
+        ShowMessage("Defeat encountered.", Color.red);
     }
     
     #endregion

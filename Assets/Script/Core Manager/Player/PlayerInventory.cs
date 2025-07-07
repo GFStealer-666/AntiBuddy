@@ -162,28 +162,40 @@ public class PlayerInventory
     {
         if (!HasItem(item))
         {
-            Debug.LogWarning($"Item {item.cardName} not found in inventory");
+            Debug.LogWarning($"PlayerInventory: Item {item.cardName} not found in inventory for consumption");
+            Debug.Log($"PlayerInventory: Current inventory items:");
+            foreach (var slot in Items)
+            {
+                Debug.Log($"  - {slot.item?.cardName ?? "null"} x{slot.quantity}");
+            }
             return false;
         }
 
-        Debug.Log($"PlayerInventory: Consuming {item.cardName} from inventory");
-        
+        Debug.Log($"PlayerInventory: Consuming {item.cardName} from inventory (current count: {GetItemCount(item)})");
+
         // Fire the item used event
         Debug.Log($"PlayerInventory: Firing OnItemUsed event for {item.cardName}");
         OnItemUsed?.Invoke(item);
-        
+
         // Remove item if it's consumable
         if (item.isConsumable)
         {
-            Debug.Log($"PlayerInventory: Item {item.cardName} is consumable, removing from inventory");
             RemoveItem(item, 1);
             Debug.Log($"PlayerInventory: Removed {item.cardName} from inventory");
         }
+
+        // Refresh hand UI
+        // var playerHandUI = FindFirstObjectByType<PlayerHandUI>();
+        // if (playerHandUI != null)
+        // {
+        //     Debug.Log("PlayerInventory: Refreshing PlayerHandUI after item consumption");
+        //     playerHandUI.RefreshHand();
+        // }
         else
         {
-            Debug.Log($"PlayerInventory: {item.cardName} used but not consumed");
+            Debug.LogWarning("PlayerInventory: PlayerHandUI not found");
         }
-        
+
         return true;
     }
 }

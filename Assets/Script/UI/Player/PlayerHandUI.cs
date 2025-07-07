@@ -19,12 +19,14 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
     private List<GameObject> currentCardObjects = new List<GameObject>();
     private int lastHandCount = -1;
     private float lastRefreshTime = 0f;
-    
+
     #region Unity Lifecycle
-    
-    void Start()
+    void Awake()
     {
         InitializeComponents();
+    }
+    void Start()
+    {
         RefreshHand();
         
         // Subscribe to card limit changes
@@ -37,6 +39,7 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
         if (Time.time - lastRefreshTime > refreshRate * 5f) // 5x slower polling as backup
         {
             CheckForHandChanges();
+            RefreshHand();
             lastRefreshTime = Time.time;
         }
     }
@@ -111,11 +114,13 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
             player.PlayerInventory.OnItemAdded += OnItemAddedToInventory;
             player.PlayerInventory.OnItemRemoved += OnItemRemovedFromInventory;
             player.PlayerInventory.OnItemUsed += OnItemUsedFromInventory;
-            Debug.Log("PlayerHandUI: Successfully subscribed to PlayerInventory events");
+            Debug.Log($"PlayerHandUI: Successfully subscribed to PlayerInventory events. Current inventory count: {player.PlayerInventory.Items?.Count ?? 0}");
         }
         else
         {
             Debug.LogWarning("PlayerHandUI: Could not subscribe to PlayerInventory events - player or PlayerInventory is null");
+            if (player == null) Debug.LogWarning("PlayerHandUI: player is null");
+            if (player?.PlayerInventory == null) Debug.LogWarning("PlayerHandUI: player.PlayerInventory is null");
         }
     }
     
@@ -185,7 +190,7 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
             }
         }
         
-        Debug.Log($"PlayerHandUI: Refreshed hand - {cardsAdded} cards, {itemsAdded} items from inventory");
+        // Debug.Log($"PlayerHandUI: Refreshed hand - {cardsAdded} cards, {itemsAdded} items from inventory");
         
         // Update blocking status after creating all cards
         UpdateCardBlocking();
@@ -376,6 +381,23 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
             Debug.Log($"PlayerHandUI: Updated lastHandCount to {lastHandCount}");
         }
     }
+
+    [ContextMenu("Debug Inventory State")]
+    public void DebugInventoryState()
+    {
+        if (player?.PlayerInventory != null)
+        {
+            Debug.Log($"PlayerHandUI: Inventory has {player.PlayerInventory.Items.Count} items:");
+            foreach (var slot in player.PlayerInventory.Items)
+            {
+                Debug.Log($"  - {slot.item?.cardName ?? "null"} x{slot.quantity}");
+            }
+        }
+        else
+        {
+            Debug.LogWarning("PlayerHandUI: Cannot debug inventory - player or inventory is null");
+        }
+    }
     
     public int GetHandCount()
     {
@@ -386,6 +408,18 @@ public class PlayerHandUI : MonoBehaviour, ICardActionHandler
     {
         player = newPlayer;
         RefreshHand();
+    }
+    
+    public void SetCardsInteractable(bool interactable)
+    {
+        foreach (var cardObject in currentCardObjects)
+        {
+            var cardUI = cardObject.GetComponent<CardUI>();
+            if (cardUI != null)
+            {
+                cardUI.SetInteractable(interactable);
+            }
+        }
     }
     
     #endregion

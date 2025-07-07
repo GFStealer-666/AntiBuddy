@@ -167,8 +167,6 @@ public class PlayerManager : MonoBehaviour
         // Play the card
         if (player.PlayCard(card, target))
         {
-            Debug.Log($"PlayerManager: Played {card.cardName}");
-            
             OnCardPlayed?.Invoke(card);
             NotifyStatsChanged();
             return true;

@@ -23,6 +23,9 @@ public class CytokineItemSO : ItemSO
             if (cardField.TryPlayCardToField(helperTCell))
             {
                 Debug.Log("Cytokine: Successfully spawned Helper T Cell on field");
+                
+                // Notify systems about the new card
+                turnManager.NotifyCardPlayed(helperTCell);
             }
             else
             {

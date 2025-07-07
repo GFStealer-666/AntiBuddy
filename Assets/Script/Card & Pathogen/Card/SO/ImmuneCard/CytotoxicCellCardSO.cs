@@ -9,6 +9,10 @@ public class CytotoxicCellCardSO : CardSO
     
     public override void ApplyEffect(Player player, List<CardSO> playedCards, Pathogen target)
     {
+        Debug.Log("Cytotoxic T-Cell: Entering ApplyEffect method");
+        Debug.Log($"Cytotoxic T-Cell: hasBeenActivated = {hasBeenActivated}");
+        Debug.Log($"Cytotoxic T-Cell: Checking for Helper T-Cell in played cards ({playedCards.Count} cards played this turn)");
+        
         // Prevent double activation
         if (hasBeenActivated)
         {

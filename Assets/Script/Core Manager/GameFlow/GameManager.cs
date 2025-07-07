@@ -361,5 +361,41 @@ public class GameManager : MonoBehaviour
     }
     
     #endregion
+    
+    #region Debug/Test Methods
+
+    /// <summary>
+    /// Simulates a victory state for testing purposes.
+    /// </summary>
+    // public void SimulateVictory()
+    // {
+    //     Debug.Log("GameManager: Simulating victory state.");
+    //     OnGameWon?.Invoke();
+    //     if (gameStateManager != null)
+    //     {
+    //         gameStateManager.SetGameState(GameState.Victory);
+    //     }
+    //     // Trigger victory audio and UI updates here
+    //     AudioManager.Instance?.PlayVictoryBGM();
+    //     gameLogUI?.LogVictory();
+    // }
+
+    // /// <summary>
+    // /// Simulates a defeat state for testing purposes.
+    // /// </summary>
+    // public void SimulateDefeat()
+    // {
+    //     Debug.Log("GameManager: Simulating defeat state.");
+    //     OnGameOver?.Invoke();
+    //     if (gameStateManager != null)
+    //     {
+    //         gameStateManager.(GameState.GameOver);
+    //     }
+    //     // Trigger defeat audio and UI updates here
+    //     AudioManager.Instance?.PlayDefeatBGM();
+    //     gameLogUI?.LogDefeat();
+    // }
+
+    #endregion
 }
 

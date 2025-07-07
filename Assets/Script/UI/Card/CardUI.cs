@@ -212,4 +212,16 @@ public class CardUI : MonoBehaviour, IPointerClickHandler, IPointerEnterHandler,
     }
     
     #endregion
+
+    /// <summary>
+    /// Set the interactability of the card
+    /// </summary>
+    /// <param name="interactable">Whether the card should be interactable</param>
+    public void SetInteractable(bool interactable)
+    {
+        if (cardButton != null)
+        {
+            cardButton.interactable = interactable;
+        }
+    }
 }
